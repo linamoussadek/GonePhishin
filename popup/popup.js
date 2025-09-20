@@ -12,3 +12,9 @@ function initializeExtension() {
     // Basic setup complete
     // Core MITM detection features will be added in future commits
 }
+
+document.getElementById("openDashboard").addEventListener("click", async () => {
+  const url = chrome.runtime.getURL("dashboard/dashboard.html");
+  await chrome.tabs.create({ url }); 
+});
+
