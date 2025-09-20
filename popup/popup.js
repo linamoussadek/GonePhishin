@@ -14,7 +14,7 @@ function initializeExtension() {
 }
 
 document.getElementById("openDashboard").addEventListener("click", async () => {
-  const url = chrome.runtime.getURL("dashboard/dashboard.html");
+  const url = chrome.runtime.getURL("popup/dashboard/dashboard.html");
   await chrome.tabs.create({ url }); 
 });
 
