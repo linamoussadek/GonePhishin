@@ -5,7 +5,14 @@
   "description": "A Chrome extension for phishing protection and detection",
   "permissions": [
     "activeTab",
+    "tabs",
     "storage"
+  ],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "host_permissions": [
+    "https://urlscan.io/*"
   ],
   "action": {
     "default_popup": "popup/popup.html",
