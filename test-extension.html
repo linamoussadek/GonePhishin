@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extension HTTPS Upgrade Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2c3e50; }
+        h2 { color: #3498db; margin-top: 0; }
+        .test-link {
+            display: block;
+            padding: 12px 20px;
+            margin: 10px 0;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .test-link:hover {
+            background: #2980b9;
+        }
+        .instructions {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .result {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔒 Gone Phishin' Extension Test Page</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Manual HTTP Navigation</h2>
+        <div class="instructions">
+            <strong>Instructions:</strong>
+            <ol>
+                <li>Open DevTools (F12) and go to the Network tab</li>
+                <li>Check "Preserve log"</li>
+                <li>Click one of the links below</li>
+                <li>Look at the first request in Network tab</li>
+                <li>Check for <code>non-authoritative-reason: WebRequest API</code></li>
+            </ol>
+        </div>
+        
+        <a href="http://httpbin.org" class="test-link" target="_blank">
+            Test 1: http://httpbin.org
+        </a>
+        <a href="http://example.org" class="test-link" target="_blank">
+            Test 2: http://example.org
+        </a>
+        <a href="http://captive.apple.com" class="test-link" target="_blank">
+            Test 3: http://captive.apple.com
+        </a>
+        
+        <div class="result">
+            <strong>✅ Extension Working If You See:</strong>
+            <ul>
+                <li><code>Status Code: 307 Internal Redirect</code></li>
+                <li><code>non-authoritative-reason: WebRequest API</code> ← YOUR EXTENSION!</li>
+                <li>Final URL is <code>https://</code></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Compare With Extension Disabled</h2>
+        <div class="instructions">
+            <strong>Step-by-step comparison:</strong>
+            <ol>
+                <li><strong>With Extension ON:</strong> Click a test link above, check Network tab</li>
+                <li>Go to <code>chrome://extensions/</code> and <strong>disable</strong> "Gone Phishin'"</li>
+                <li>Clear HSTS cache: <code>chrome://net-internals/#hsts</code> → Delete domain</li>
+                <li><strong>With Extension OFF:</strong> Click the same link again</li>
+                <li>Compare the <code>non-authoritative-reason</code> values</li>
+            </ol>
+        </div>
+        
+        <div class="result">
+            <strong>📊 Expected Results:</strong>
+            <ul>
+                <li><strong>Extension ON:</strong> <code>WebRequest API</code></li>
+                <li><strong>Extension OFF:</strong> <code>HSTS</code> or stays <code>http://</code></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Check Extension Badge Count</h2>
+        <div class="instructions">
+            <strong>Instructions:</strong>
+            <ol>
+                <li>Look at your extension icon in Chrome toolbar</li>
+                <li>Click a test link above</li>
+                <li>Watch for the 🔒 badge to appear for 3 seconds</li>
+                <li>Click extension icon to see stats update</li>
+            </ol>
+        </div>
+        
+        <div class="result">
+            <strong>✅ Extension Working If:</strong>
+            <ul>
+                <li>🔒 badge appears on extension icon</li>
+                <li>Total Upgrades counter increases</li>
+                <li>Last Upgrade shows the site you just visited</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 4: Definitive Proof</h2>
+        <div class="instructions">
+            <strong>The smoking gun:</strong>
+            <p>The <code>non-authoritative-reason: WebRequest API</code> header is <strong>ONLY</strong> set when a Chrome extension's declarativeNetRequest API performs the redirect. Chrome's native HTTPS-First mode uses <code>HSTS</code> instead.</p>
+            <p>If you see <code>WebRequest API</code>, it's <strong>100% your extension</strong> doing the work!</p>
+        </div>
+    </div>
+
+    <footer style="text-align: center; margin-top: 40px; color: #666; font-size: 14px;">
+        <p>🔒 Gone Phishin' - HTTPS Enforcement Extension</p>
+        <p>Testing page for verifying extension functionality</p>
+    </footer>
+</body>
+</html>
+

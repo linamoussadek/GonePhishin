@@ -1,0 +1,60 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": { "type": "upgradeScheme" },
+    "condition": {
+      "urlFilter": "http://",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "script",
+        "image",
+        "font",
+        "stylesheet",
+        "xmlhttprequest",
+        "media",
+        "websocket",
+        "object",
+        "ping"
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 2,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "http://",
+      "resourceTypes": [
+        "sub_frame",
+        "script",
+        "image",
+        "font",
+        "stylesheet",
+        "xmlhttprequest",
+        "media",
+        "websocket",
+        "object"
+      ]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 3,
+    "action": { "type": "allow" },
+    "condition": {
+      "urlFilter": "http://neverssl.com/*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 4,
+    "priority": 3,
+    "action": { "type": "allow" },
+    "condition": {
+      "urlFilter": "http://http.badssl.com/*",
+      "resourceTypes": ["main_frame"]
+    }
+  }
+]

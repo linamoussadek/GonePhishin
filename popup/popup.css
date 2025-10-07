@@ -67,3 +67,53 @@ body {
     color: #666;
     line-height: 1.4;
 }
+
+/* HTTPS Statistics Styles */
+.https-stats {
+    margin: 15px 0;
+    padding: 15px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    color: white;
+}
+
+.https-stats h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-item:last-of-type {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.stat-value {
+    font-size: 14px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+
+.info-message {
+    margin-top: 12px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    font-size: 12px;
+    text-align: center;
+}

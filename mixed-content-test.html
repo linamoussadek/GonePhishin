@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mixed Content Test - Gone Phishin' Extension</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2c3e50; }
+        h2 { color: #3498db; margin-top: 0; }
+        .test-item {
+            margin: 15px 0;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            background: #f8f9fa;
+        }
+        .instructions {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .result {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .test-image {
+            width: 200px;
+            height: 100px;
+            border: 2px solid #ddd;
+            margin: 10px 0;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔒 Mixed Content Test Page</h1>
+    <p>This page tests whether your extension blocks mixed content (HTTP resources on HTTPS pages).</p>
+    
+    <div class="instructions">
+        <strong>Instructions:</strong>
+        <ol>
+            <li>Open DevTools (F12) and go to the Network tab</li>
+            <li>Check "Preserve log"</li>
+            <li>Load this page (it should be HTTPS due to your extension)</li>
+            <li>Look for blocked HTTP requests in the Network tab</li>
+            <li>Check if the HTTP images/scripts below load or are blocked</li>
+        </ol>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 1: HTTP Images (Should be Blocked)</h2>
+        <div class="test-item">
+            <p><strong>HTTP Image Test:</strong></p>
+            <img src="http://httpbin.org/image/png" alt="HTTP Image" class="test-image" 
+                 onerror="document.getElementById('img1-result').innerHTML='❌ BLOCKED by extension'"
+                 onload="document.getElementById('img1-result').innerHTML='✅ Loaded (not blocked)'">
+            <div id="img1-result">Loading...</div>
+        </div>
+        
+        <div class="test-item">
+            <p><strong>Another HTTP Image:</strong></p>
+            <img src="http://httpbin.org/image/jpeg" alt="HTTP Image 2" class="test-image"
+                 onerror="document.getElementById('img2-result').innerHTML='❌ BLOCKED by extension'"
+                 onload="document.getElementById('img2-result').innerHTML='✅ Loaded (not blocked)'">
+            <div id="img2-result">Loading...</div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: HTTP Scripts (Should be Blocked)</h2>
+        <div class="test-item">
+            <p><strong>HTTP Script Test:</strong></p>
+            <script>
+                // Try to load an HTTP script
+                const script = document.createElement('script');
+                script.src = 'http://httpbin.org/json';
+                script.onerror = function() {
+                    document.getElementById('script-result').innerHTML = '❌ HTTP Script BLOCKED by extension';
+                };
+                script.onload = function() {
+                    document.getElementById('script-result').innerHTML = '✅ HTTP Script loaded (not blocked)';
+                };
+                document.head.appendChild(script);
+            </script>
+            <div id="script-result">Loading...</div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: HTTP Stylesheets (Should be Blocked)</h2>
+        <div class="test-item">
+            <p><strong>HTTP CSS Test:</strong></p>
+            <link rel="stylesheet" href="http://httpbin.org/css" 
+                  onerror="document.getElementById('css-result').innerHTML='❌ HTTP CSS BLOCKED by extension'"
+                  onload="document.getElementById('css-result').innerHTML='✅ HTTP CSS loaded (not blocked)'">
+            <div id="css-result">Loading...</div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 4: HTTPS Resources (Should Work)</h2>
+        <div class="test-item">
+            <p><strong>HTTPS Image Test (should work):</strong></p>
+            <img src="https://httpbin.org/image/png" alt="HTTPS Image" class="test-image"
+                 onerror="document.getElementById('https-img-result').innerHTML='❌ HTTPS Image failed'"
+                 onload="document.getElementById('https-img-result').innerHTML='✅ HTTPS Image loaded successfully'">
+            <div id="https-img-result">Loading...</div>
+        </div>
+    </div>
+    
+    <div class="result">
+        <h3>✅ Expected Results with Your Extension:</h3>
+        <ul>
+            <li><strong>HTTP Images:</strong> ❌ Blocked (won't load)</li>
+            <li><strong>HTTP Scripts:</strong> ❌ Blocked (won't execute)</li>
+            <li><strong>HTTP CSS:</strong> ❌ Blocked (won't apply)</li>
+            <li><strong>HTTPS Resources:</strong> ✅ Load normally</li>
+        </ul>
+    </div>
+    
+    <div class="warning">
+        <h3>⚠️ What to Look For in DevTools:</h3>
+        <ul>
+            <li>HTTP requests should show as <code>blocked</code> or <code>failed</code></li>
+            <li>Look for <code>net::ERR_BLOCKED_BY_CLIENT</code> errors</li>
+            <li>HTTPS requests should load normally</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 5: Manual Network Check</h2>
+        <div class="instructions">
+            <strong>Check DevTools Network Tab:</strong>
+            <ol>
+                <li>Look for requests to <code>http://httpbin.org/image/png</code></li>
+                <li>Check the status - should be <code>blocked</code> or <code>failed</code></li>
+                <li>Look for requests to <code>https://httpbin.org/image/png</code></li>
+                <li>Check the status - should be <code>200 OK</code></li>
+            </ol>
+        </div>
+    </div>
+
+    <footer style="text-align: center; margin-top: 40px; color: #666; font-size: 14px;">
+        <p>🔒 Gone Phishin' - Mixed Content Protection Test</p>
+        <p>This page tests your extension's mixed content blocking capabilities</p>
+    </footer>
+</body>
+</html>
+
