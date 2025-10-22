@@ -88,92 +88,77 @@ chrome.webNavigation.onCommitted.addListener((details) => {
 
 // --- Original phishing protection functionality ---
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+/* -------------------- start of urlscan code -------------------- */
+// working urlscan code. still needs tweaking and better error handling, but basic functionality is there
 
-async function pollUrlScanResult(uuid) {
-    try {
-        responseStatus = 404;
-        content = null;
-        verdict = null;
-        while(responseStatus === 404) {
-            const reqUrl = "https://urlscan.io/api/v1/result/" + uuid + "/?API-Key=<api-key-here>" // replace with api key
-            const rawResponse = await fetch(reqUrl, {
-                method: 'GET',
-            });
-            content = await rawResponse.json();
-            responseStatus = content.status;
-            if (responseStatus === 404) { // see if you can improve
-                await sleep(10000);
-            }
-        }
-        if (content) {
-            // if malicious = true you might want to look further into the content data
-            console.log("content: ", content);
-            verdict = content.verdicts.overall.malicious; 
-            console.log("verdict: ", verdict);
-        }
-
-        // need to handle failed case
-
-        return verdict;
-
-    } catch {
-        console.error("Error retrieving URL scan result:", error);
-        return null;
-    }
-
-}
-
-async function urlScan(urlToScan) {
-    try {
-        const rawResponse = await fetch('https://urlscan.io/api/v1/scan', {
-        method: 'POST',
-        headers: {
-            'API-Key': 'api-key-here', // replace with api key
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            url: urlToScan,
-            visibility: "public",
-        })
-        });
-
-        if (!rawResponse.ok) {
-        throw new Error(`HTTP error! status: ${rawResponse.status}`);
-        }
-
-        const content = await rawResponse.json();
-        console.log("Scan request response:", content);
-
-        // poll for scan result using the urlscan request uuid
-        // the scan takes at least 30 seconds to finish
-        const uuid = content.uuid;
-        console.log("response uuid: ", uuid);
-        await sleep(30000); // this may have side effects
-        const result = await pollUrlScanResult(uuid);
-        console.log("Scan verdict", result);
-
-        return result;
+async function submitScanToBackend(url) {
+  try {
+    const resp = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/urlscan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+    const data = await resp.json();
+    console.log(data);
+    return data.uuid;
 
   } catch (error) {
-        console.error("Error scanning URL:", error);
-        return null;
+    console.error("Fetch failed:", error.message);
   }
-}
+  
+};
+
+// add error handling
+async function pollScanResult(uuid) {
+  let attempts = 0;
+  const maxAttempts = 50; // arbitrary
+
+  while (attempts < maxAttempts) {
+    const resp = await fetch(`https://premonitory-distortional-jayme.ngrok-free.dev/api/urlscan/${uuid}`,
+      {
+        method: "GET",
+        headers: new Headers({
+          "ngrok-skip-browser-warning": "69420",
+        })
+      }
+    );
+    const data = await resp.json();
+
+    if (data.status !== 'pending') {
+      //console.log('Scan complete:', data);
+      return data;
+    }
+    console.log(`Result not ready yet (attempt ${attempts + 1})...`);
+    await new Promise((r) => setTimeout(r, 2000)); // 2 second intervals
+    attempts++;
+  }
+  console.warn('Timed out waiting for scan result');
+  return null;
+};
+
+async function urlScan(url) {
+  const uuid = await submitScanToBackend(url);
+  await new Promise((r) => setTimeout(r, 10000)); // recommended to wait 10 seconds to poll
+  const result = await pollScanResult(uuid);
+  
+  console.log("final urlscan result", result);
+  const hasVerdicts = result.verdicts.overall.hasVerdicts
+  console.log("hasverdicts: ", hasVerdicts);
+  if (!hasVerdicts) {
+    console.log("Unable to verify URL (no verdict)")
+    return; // no verdict
+  }
+  console.log("malicious:", result.verdicts.overall.malicious);
+  return result.verdicts.overall.malicious
+};
 
 // atm it's only working when you open a new tab or if you're on an existing tab and go to a new website
-// if the extension is enabled after already navigating to the website, then we'd need a popup 
-// TEMPORARILY DISABLED FOR TESTING HTTPS FEATURES
-// chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-//     const url = changeInfo.url;
-//     if (!url || ['chrome://', 'about://'].some(p => url.startsWith(p))) return;
-//     if (!tab.active) return; // revisit
-//     console.log(url);
-//     await urlScan(url);
-// })
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  const url = changeInfo.url;
+  if (!url || ['chrome://', 'about://'].some(p => url.startsWith(p))) return;
+  if (!tab.active) return; // revisit
+  console.log(url);
+  await urlScan(url);
+});
 
-
-// should we have a list of safe sites? to avoid unnecessary requests
-// maybe allow user to whitelist websites or we could have a list of preapproved common sites and look there first
+/* -------------------- end of urlscan code -------------------- */
