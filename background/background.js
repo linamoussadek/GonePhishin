@@ -89,7 +89,7 @@ chrome.webNavigation.onCommitted.addListener((details) => {
 // --- Original phishing protection functionality ---
 
 /* -------------------- start of urlscan code -------------------- */
-// working urlscan code. still needs tweaking and better error handling, but basic functionality is there
+// working urlscan code. still needs tweaking but basic functionality is there
 
 async function submitScanToBackend(url) {
   try {
@@ -98,58 +98,122 @@ async function submitScanToBackend(url) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
     });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error(`Backend returned error: ${resp.status} - ${errText}`);
+      return { success: false, message: "Cannot scan this URL." };
+    }
+
     const data = await resp.json();
     console.log(data);
-    return data.uuid;
+
+    if (!data.uuid) {
+      console.error("No UUID returned; likely blocked by URLScan");
+      return { success: false, message: "We couldn’t verify this URL." };
+    }
+
+    return { 
+      success: true, 
+      message: "Scan submitted successfully", 
+      data: {uuid: data.uuid} 
+    };
 
   } catch (error) {
     console.error("Fetch failed:", error.message);
+    return { success: false, message: "Network or server error contacting backend." };
   }
-  
 };
 
-// add error handling
 async function pollScanResult(uuid) {
   let attempts = 0;
   const maxAttempts = 50; // arbitrary
+  const pollInterval = 2000;
 
   while (attempts < maxAttempts) {
-    const resp = await fetch(`https://premonitory-distortional-jayme.ngrok-free.dev/api/urlscan/${uuid}`,
-      {
-        method: "GET",
-        headers: new Headers({
-          "ngrok-skip-browser-warning": "69420",
-        })
-      }
-    );
-    const data = await resp.json();
 
-    if (data.status !== 'pending') {
-      //console.log('Scan complete:', data);
-      return data;
-    }
-    console.log(`Result not ready yet (attempt ${attempts + 1})...`);
-    await new Promise((r) => setTimeout(r, 2000)); // 2 second intervals
-    attempts++;
+    try {
+      const resp = await fetch(`https://premonitory-distortional-jayme.ngrok-free.dev/api/urlscan/${uuid}`, {
+          method: "GET",
+          headers: new Headers({
+            "ngrok-skip-browser-warning": "69420",
+          })
+      });
+
+      // error in response
+      if (!resp.ok) {
+        console.warn(`Polling failed (status ${resp.status})`);
+        throw new Error(`Polling failed with ${resp.status}`);
+      }
+
+      //console.log("response: ", resp);
+     // const data = await resp.json();
+
+      let data;
+      try {
+        data = await resp.json();
+      } catch (err) {
+        console.error("Invalid JSON in polling response:", err.message);
+        await new Promise((r) => setTimeout(r, pollInterval));
+        attempts++;
+        continue;
+      }
+
+      // still need to wait for result
+      if (data.status === 'pending') {
+        console.log(`Result not ready yet (attempt ${attempts + 1})...`);
+        await new Promise((r) => setTimeout(r, pollInterval));
+        attempts++;
+        continue;
+      }
+
+      console.log("Scan complete:", data);
+      return {success: true, message: "Scan complete", data};
+
+    } catch (err) {
+      console.error(`Polling error (attempt ${attempts + 1}):`, err.message);
+      // still try again
+      await new Promise((r) => setTimeout(r, pollInterval));
+      attempts++;
+    };
   }
   console.warn('Timed out waiting for scan result');
-  return null;
+  return { success: false, message: "Scan timed out before completion" };
 };
 
+// unsuccessful scan returns {success: false, message: <msg>}
+// successful scan returns {success: true, message: "Scan successful", data: {isMalicious: <boolean>} }
 async function urlScan(url) {
-  const uuid = await submitScanToBackend(url);
-  await new Promise((r) => setTimeout(r, 10000)); // recommended to wait 10 seconds to poll
-  const result = await pollScanResult(uuid);
+  const submission = await submitScanToBackend(url);
   
-  console.log("final urlscan result", result);
-  const hasVerdicts = result.verdicts.overall.hasVerdicts
-  console.log("hasverdicts: ", hasVerdicts);
+  if (!submission.success) {
+    console.warn("Problem submitting scan:", submission.message);
+    return { success: false, message: submission.message };
+  }
+
+  // wait before polling
+  await new Promise((r) => setTimeout(r, 10000));
+
+  // get polling result
+  const poll = await pollScanResult(submission.data.uuid);
+  console.log("polling result", poll);
+  if (!poll.success) {
+    console.warn(poll.message);
+    return { success: false, message: poll.message };
+  }
+  
+  const result = poll.data;
+  const hasVerdicts = result.verdicts?.overall?.hasVerdicts
   if (!hasVerdicts) {
     console.log("Unable to verify URL (no verdict)")
-    return; // no verdict
+    return {  // either return an error or return null
+      success: false, 
+      message: "We couldn’t verify this URL." 
+    };
   }
+
   console.log("malicious:", result.verdicts.overall.malicious);
-  return result.verdicts.overall.malicious
+  return { success: true, message: "Scan successful", data: { isMalicious: result.verdicts.overall.malicious } };
 };
 
 // atm it's only working when you open a new tab or if you're on an existing tab and go to a new website
