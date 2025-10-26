@@ -117,3 +117,53 @@ body {
     font-size: 12px;
     text-align: center;
 }
+
+/* TLS Security Status Styles */
+.tls-status {
+    margin: 15px 0;
+    padding: 15px;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    border-radius: 8px;
+    color: white;
+}
+
+.tls-status h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+/* Security Alerts Styles */
+.security-alerts {
+    margin: 15px 0;
+    padding: 15px;
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    border-radius: 8px;
+    color: white;
+}
+
+.security-alerts h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.alert-item {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 10px;
+    margin: 8px 0;
+}
+
+.alert-title {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.alert-details {
+    font-size: 11px;
+    opacity: 0.8;
+}

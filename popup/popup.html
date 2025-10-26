@@ -34,10 +34,47 @@
                     ✅ Automatically upgrading HTTP to HTTPS
                 </div>
             </div>
+
+            <!-- TLS Security Status -->
+            <div class="tls-status">
+                <h2>🛡️ TLS Security</h2>
+                <div class="stat-item">
+                    <span class="stat-label">Current Site:</span>
+                    <span class="stat-value" id="currentSite">Loading...</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Certificate Status:</span>
+                    <span class="stat-value" id="certStatus">Unknown</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Notary Consensus:</span>
+                    <span class="stat-value" id="notaryConsensus">Unknown</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">TLS Version:</span>
+                    <span class="stat-value" id="tlsVersion">Unknown</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Issuer:</span>
+                    <span class="stat-value" id="certIssuer">Unknown</span>
+                </div>
+            </div>
+
+            <!-- Security Alerts -->
+            <div class="security-alerts" id="securityAlerts" style="display: none;">
+                <h2>⚠️ Security Alerts</h2>
+                <div id="alertsList"></div>
+            </div>
             
             <div class="dashboardButton">
                 <button id="openDashboard">Dashboard</button>
             </div>
+            
+        <div class="testButton">
+            <button id="testTls">🧪 Test TLS Check</button>
+            <button id="clearRateLimit">🧹 Clear Rate Limit</button>
+            <button id="retryNotary">🔄 Retry Notary Check</button>
+        </div>
         </div>
     </div>
     

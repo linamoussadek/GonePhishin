@@ -1,0 +1,26 @@
+{
+  "name": "gone-phishin-notary-stub",
+  "version": "1.0.0",
+  "description": "Development notary stub for Gone Phishin' Chrome extension",
+  "main": "notary_stub.js",
+  "scripts": {
+    "start": "node notary_stub.js",
+    "dev": "node notary_stub.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "notary",
+    "tls",
+    "certificate",
+    "chrome-extension",
+    "development"
+  ],
+  "author": "Gone Phishin' Team",
+  "license": "MIT"
+}

@@ -10,16 +10,28 @@
     "declarativeNetRequest",
     "declarativeNetRequestFeedback",
     "webRequest",
-    "webNavigation"
+    "webNavigation",
+    "scripting"
   ],
   "background": {
     "service_worker": "background/background.js",
     "type": "module"
   },
-  "host_permissions": [
-    "https://urlscan.io/*",
-    "<all_urls>"
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "run_at": "document_start"
+    }
   ],
+    "host_permissions": [
+      "https://urlscan.io/*",
+      "http://localhost:8080/*",
+      "http://127.0.0.1:8080/*",
+      "http://localhost:9001/*",
+      "http://127.0.0.1:9001/*",
+      "<all_urls>"
+    ],
   "declarative_net_request": {
     "rule_resources": [
       {
@@ -31,7 +43,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["warning.html", "warning.css", "warning.js", "icons/*"],
+      "resources": ["warning.html", "warning.css", "warning.js", "interstitial.html", "interstitial.js", "icons/*"],
       "matches": ["<all_urls>"]
     }
   ],
