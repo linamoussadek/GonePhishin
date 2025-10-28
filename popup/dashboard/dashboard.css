@@ -13,6 +13,7 @@ body{
     top: 0;
 
     padding-top: 50px;
+    align-items: center;
 }
 
 .circle-img {
@@ -35,7 +36,7 @@ body{
 
 .menu{
   position: relative;
-  top: 250px;
+  top: 230px;
   right: 25px;
 
   display: flex;
@@ -55,45 +56,33 @@ body{
 
 }
 
-.summary, .medal{
+.right-column {
+  position: absolute;
+  top: 100px;
+  left: 800px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px; /* space between medal and summary */
+}
+
+/* remove position from summary & medal */
+.summary, .medal {
   width: 380px;
   height: 257px;
   flex-shrink: 0;
-
   border-radius: 46px;
   background: #FFF;
-
   padding: 40px;
   font-size: 20px;
-
 }
 
-.summary{
+#daysPassed {
   position: relative;
-  top: 149px;
-  left: 560px;
-  right: 524px;
-
+  top: 180px;       /* slightly below username */
+  left: 115px;      /* align with username center */
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
 }
 
-.medal{
-  position: absolute;
-  top: 149px;
-  left: 1100px;
-  right: 524px;
 
-}
-
-.progressBar{
-  position: relative;
-  top: 600px;
-  left: 600px;
-
-  display: flex;
-  gap: 500px;
-}
-
-.progressImg{
-  width: 183px;
-  height: 122px;
-}
