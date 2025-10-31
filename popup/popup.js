@@ -10,41 +10,147 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load TLS security status
     loadTlsStatus();
-});
-
-// Retry notary check button
-document.getElementById("retryNotary").addEventListener("click", async () => {
-  console.log('🔄 Retry notary check button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  if (tab && tab.url) {
-    const hostname = new URL(tab.url).hostname;
-    console.log('🔄 Retrying notary check for:', hostname);
     
-    // Send message to background script to retry with bypass cache
-    chrome.runtime.sendMessage({
-      action: 'retryNotary',
-      hostname: hostname
-    }, (response) => {
-      console.log('🔄 Retry notary response:', response);
-      
-      // Reload the TLS status after a short delay
-      setTimeout(() => {
-        loadTlsStatus();
-      }, 2000);
-    });
-  } else {
-    console.log('❌ No active tab found');
-  }
+    // Load heuristics status
+    loadHeuristicsStatus();
+    
+    // Setup all button listeners
+    setupButtonListeners();
 });
 
 function initializeExtension() {
     console.log('Initializing Gone Phishin\' extension...');
+}
+
+// Setup all button event listeners
+function setupButtonListeners() {
+    // Dashboard button
+    document.getElementById("openDashboard").addEventListener("click", async () => {
+        const url = chrome.runtime.getURL("popup/dashboard/dashboard.html");
+        await chrome.tabs.create({ url }); 
+    });
     
-    // Basic setup complete
-    // Core MITM detection features will be added in future commits
+    // Retry notary check button
+    document.getElementById("retryNotary").addEventListener("click", async () => {
+        console.log('🔄 Retry notary check button clicked');
+        
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        if (tab && tab.url) {
+            const hostname = new URL(tab.url).hostname;
+            console.log('🔄 Retrying notary check for:', hostname);
+            
+            chrome.runtime.sendMessage({
+                action: 'retryNotary',
+                hostname: hostname
+            }, (response) => {
+                console.log('🔄 Retry notary response:', response);
+                setTimeout(() => { loadTlsStatus(); }, 2000);
+            });
+        } else {
+            console.log('❌ No active tab found');
+        }
+    });
+    
+    // Test TLS button
+    document.getElementById("testTls").addEventListener("click", async () => {
+        console.log('🧪 Manual TLS test button clicked');
+        
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        if (tab && tab.url) {
+            console.log('🧪 Testing TLS for:', tab.url);
+            
+            chrome.runtime.sendMessage({
+                action: 'testTls',
+                url: tab.url
+            }, (response) => {
+                console.log('🧪 Test response:', response);
+                setTimeout(() => { loadTlsStatus(); }, 2000);
+            });
+        } else {
+            console.log('❌ No active tab found');
+        }
+    });
+    
+    // Clear rate limit button
+    document.getElementById("clearRateLimit").addEventListener("click", async () => {
+        console.log('🧹 Clear rate limit button clicked');
+        
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        if (tab && tab.url) {
+            const hostname = new URL(tab.url).hostname;
+            console.log('🧹 Clearing rate limit for:', hostname);
+            
+            chrome.runtime.sendMessage({
+                action: 'clearRateLimit',
+                hostname: hostname
+            }, (response) => {
+                console.log('🧹 Clear rate limit response:', response);
+            });
+        } else {
+            console.log('❌ No active tab found');
+        }
+    });
+}
+
+// Load and display heuristics status
+async function loadHeuristicsStatus() {
+    try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+        if (!tab || !tab.url) {
+            return;
+        }
+
+        const url = new URL(tab.url);
+        const hostname = url.hostname;
+
+        // Get recent heuristics results for this hostname
+        const storageData = await chrome.storage.local.get();
+        
+        const heuristicsKeys = Object.keys(storageData).filter(key => 
+            key.startsWith('heuristics_') && storageData[key].hostname === hostname
+        );
+
+        if (heuristicsKeys.length > 0) {
+            // Get the most recent heuristics entry
+            const recentHeuristics = heuristicsKeys
+                .map(key => ({ key, timestamp: storageData[key].timestamp }))
+                .sort((a, b) => b.timestamp - a.timestamp)[0];
+
+            const heuristicsData = storageData[recentHeuristics.key];
+            
+            // Show heuristics section
+            const heuristicsSection = document.getElementById('heuristicsStatus');
+            heuristicsSection.style.display = 'block';
+            
+            // Update heuristics display
+            document.getElementById('heuristicScore').textContent = heuristicsData.anomalyScore || 0;
+            
+            if (heuristicsData.externalPosts > 0) {
+                document.getElementById('externalPostsItem').style.display = 'flex';
+                document.getElementById('externalPosts').textContent = heuristicsData.externalPosts;
+            }
+            
+            if (heuristicsData.externalLinks > 0) {
+                document.getElementById('externalLinksItem').style.display = 'flex';
+                document.getElementById('externalLinks').textContent = heuristicsData.externalLinks;
+            }
+            
+            // Add detected issues to alerts
+            if (heuristicsData.detectedIssues && heuristicsData.detectedIssues.length > 0) {
+                showSecurityAlerts(heuristicsData);
+            }
+        } else {
+            // No heuristics data yet
+            document.getElementById('heuristicsStatus').style.display = 'none';
+        }
+
+    } catch (error) {
+        console.error('Error loading heuristics status:', error);
+    }
 }
 
 // Load and display HTTPS upgrade statistics
@@ -77,34 +183,6 @@ async function loadTlsStatus() {
     try {
         // Get current active tab
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-// Retry notary check button
-document.getElementById("retryNotary").addEventListener("click", async () => {
-  console.log('🔄 Retry notary check button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  if (tab && tab.url) {
-    const hostname = new URL(tab.url).hostname;
-    console.log('🔄 Retrying notary check for:', hostname);
-    
-    // Send message to background script to retry with bypass cache
-    chrome.runtime.sendMessage({
-      action: 'retryNotary',
-      hostname: hostname
-    }, (response) => {
-      console.log('🔄 Retry notary response:', response);
-      
-      // Reload the TLS status after a short delay
-      setTimeout(() => {
-        loadTlsStatus();
-      }, 2000);
-    });
-  } else {
-    console.log('❌ No active tab found');
-  }
-});
         
         if (!tab || !tab.url) {
             document.getElementById('currentSite').textContent = 'No active tab';
@@ -222,34 +300,19 @@ function showSecurityAlerts(auditData) {
             `;
             alertsList.appendChild(alertItem);
         });
-
-// Retry notary check button
-document.getElementById("retryNotary").addEventListener("click", async () => {
-  console.log('🔄 Retry notary check button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  if (tab && tab.url) {
-    const hostname = new URL(tab.url).hostname;
-    console.log('🔄 Retrying notary check for:', hostname);
+    }
     
-    // Send message to background script to retry with bypass cache
-    chrome.runtime.sendMessage({
-      action: 'retryNotary',
-      hostname: hostname
-    }, (response) => {
-      console.log('🔄 Retry notary response:', response);
-      
-      // Reload the TLS status after a short delay
-      setTimeout(() => {
-        loadTlsStatus();
-      }, 2000);
-    });
-  } else {
-    console.log('❌ No active tab found');
-  }
-});
+    // Show heuristics issues if present
+    if (auditData.detectedIssues && auditData.detectedIssues.length > 0) {
+        auditData.detectedIssues.forEach(issue => {
+            const alertItem = document.createElement('div');
+            alertItem.className = 'alert-item';
+            alertItem.innerHTML = `
+                <div class="alert-title">${issue.message}</div>
+                <div class="alert-details">Type: ${issue.type}, Severity: ${issue.severity}</div>
+            `;
+            alertsList.appendChild(alertItem);
+        });
     }
 }
 
@@ -262,255 +325,3 @@ function getTimeAgo(timestamp) {
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     return `${Math.floor(seconds / 86400)}d ago`;
 }
-
-document.getElementById("openDashboard").addEventListener("click", async () => {
-  const url = chrome.runtime.getURL("popup/dashboard/dashboard.html");
-  await chrome.tabs.create({ url }); 
-});
-
-// Retry notary check button
-document.getElementById("retryNotary").addEventListener("click", async () => {
-  console.log('🔄 Retry notary check button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  if (tab && tab.url) {
-    const hostname = new URL(tab.url).hostname;
-    console.log('🔄 Retrying notary check for:', hostname);
-    
-    // Send message to background script to retry with bypass cache
-    chrome.runtime.sendMessage({
-      action: 'retryNotary',
-      hostname: hostname
-    }, (response) => {
-      console.log('🔄 Retry notary response:', response);
-      
-      // Reload the TLS status after a short delay
-      setTimeout(() => {
-        loadTlsStatus();
-      }, 2000);
-    });
-  } else {
-    console.log('❌ No active tab found');
-  }
-});
-
-// Test TLS button
-document.getElementById("testTls").addEventListener("click", async () => {
-  console.log('🧪 Manual TLS test button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-// Retry notary check button
-document.getElementById("retryNotary").addEventListener("click", async () => {
-  console.log('🔄 Retry notary check button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  if (tab && tab.url) {
-    const hostname = new URL(tab.url).hostname;
-    console.log('🔄 Retrying notary check for:', hostname);
-    
-    // Send message to background script to retry with bypass cache
-    chrome.runtime.sendMessage({
-      action: 'retryNotary',
-      hostname: hostname
-    }, (response) => {
-      console.log('🔄 Retry notary response:', response);
-      
-      // Reload the TLS status after a short delay
-      setTimeout(() => {
-        loadTlsStatus();
-      }, 2000);
-    });
-  } else {
-    console.log('❌ No active tab found');
-  }
-});
-  
-  if (tab && tab.url) {
-    console.log('🧪 Testing TLS for:', tab.url);
-    
-    // Send message to background script
-    chrome.runtime.sendMessage({
-      action: 'testTls',
-      url: tab.url
-    }, (response) => {
-      console.log('🧪 Test response:', response);
-      
-      // Reload the TLS status after a short delay
-      setTimeout(() => {
-        loadTlsStatus();
-      }, 2000);
-    });
-
-// Retry notary check button
-document.getElementById("retryNotary").addEventListener("click", async () => {
-  console.log('🔄 Retry notary check button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  if (tab && tab.url) {
-    const hostname = new URL(tab.url).hostname;
-    console.log('🔄 Retrying notary check for:', hostname);
-    
-    // Send message to background script to retry with bypass cache
-    chrome.runtime.sendMessage({
-      action: 'retryNotary',
-      hostname: hostname
-    }, (response) => {
-      console.log('🔄 Retry notary response:', response);
-      
-      // Reload the TLS status after a short delay
-      setTimeout(() => {
-        loadTlsStatus();
-      }, 2000);
-    });
-  } else {
-    console.log('❌ No active tab found');
-  }
-});
-  } else {
-    console.log('❌ No active tab found');
-  }
-});
-
-// Retry notary check button
-document.getElementById("retryNotary").addEventListener("click", async () => {
-  console.log('🔄 Retry notary check button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  if (tab && tab.url) {
-    const hostname = new URL(tab.url).hostname;
-    console.log('🔄 Retrying notary check for:', hostname);
-    
-    // Send message to background script to retry with bypass cache
-    chrome.runtime.sendMessage({
-      action: 'retryNotary',
-      hostname: hostname
-    }, (response) => {
-      console.log('🔄 Retry notary response:', response);
-      
-      // Reload the TLS status after a short delay
-      setTimeout(() => {
-        loadTlsStatus();
-      }, 2000);
-    });
-  } else {
-    console.log('❌ No active tab found');
-  }
-});
-
-// Clear rate limit button
-document.getElementById("clearRateLimit").addEventListener("click", async () => {
-  console.log('🧹 Clear rate limit button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-// Retry notary check button
-document.getElementById("retryNotary").addEventListener("click", async () => {
-  console.log('🔄 Retry notary check button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  if (tab && tab.url) {
-    const hostname = new URL(tab.url).hostname;
-    console.log('🔄 Retrying notary check for:', hostname);
-    
-    // Send message to background script to retry with bypass cache
-    chrome.runtime.sendMessage({
-      action: 'retryNotary',
-      hostname: hostname
-    }, (response) => {
-      console.log('🔄 Retry notary response:', response);
-      
-      // Reload the TLS status after a short delay
-      setTimeout(() => {
-        loadTlsStatus();
-      }, 2000);
-    });
-  } else {
-    console.log('❌ No active tab found');
-  }
-});
-  
-  if (tab && tab.url) {
-    const hostname = new URL(tab.url).hostname;
-    console.log('🧹 Clearing rate limit for:', hostname);
-    
-    // Send message to background script
-    chrome.runtime.sendMessage({
-      action: 'clearRateLimit',
-      hostname: hostname
-    }, (response) => {
-      console.log('🧹 Clear rate limit response:', response);
-    });
-
-// Retry notary check button
-document.getElementById("retryNotary").addEventListener("click", async () => {
-  console.log('🔄 Retry notary check button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  if (tab && tab.url) {
-    const hostname = new URL(tab.url).hostname;
-    console.log('🔄 Retrying notary check for:', hostname);
-    
-    // Send message to background script to retry with bypass cache
-    chrome.runtime.sendMessage({
-      action: 'retryNotary',
-      hostname: hostname
-    }, (response) => {
-      console.log('🔄 Retry notary response:', response);
-      
-      // Reload the TLS status after a short delay
-      setTimeout(() => {
-        loadTlsStatus();
-      }, 2000);
-    });
-  } else {
-    console.log('❌ No active tab found');
-  }
-});
-  } else {
-    console.log('❌ No active tab found');
-  }
-});
-
-// Retry notary check button
-document.getElementById("retryNotary").addEventListener("click", async () => {
-  console.log('🔄 Retry notary check button clicked');
-  
-  // Get current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  if (tab && tab.url) {
-    const hostname = new URL(tab.url).hostname;
-    console.log('🔄 Retrying notary check for:', hostname);
-    
-    // Send message to background script to retry with bypass cache
-    chrome.runtime.sendMessage({
-      action: 'retryNotary',
-      hostname: hostname
-    }, (response) => {
-      console.log('🔄 Retry notary response:', response);
-      
-      // Reload the TLS status after a short delay
-      setTimeout(() => {
-        loadTlsStatus();
-      }, 2000);
-    });
-  } else {
-    console.log('❌ No active tab found');
-  }
-});
-

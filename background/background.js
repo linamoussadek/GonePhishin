@@ -244,11 +244,10 @@ const certificateDatabase = new Map(); // hostname -> { issuer, fingerprint, fir
 const sessionCertificates = new Map(); // tabId -> { hostname, certificate, timestamp }
 const weakTlsAlerts = new Map(); // hostname -> { protocol, cipher, timestamp }
 
-// Notary configuration - Development endpoints with fallbacks
+// Notary configuration - Backend endpoints (solves CORS issues)
 const NOTARY_ENDPOINTS = [
-  'http://localhost:9001/observe',
-  'http://127.0.0.1:9001/observe',
-  'http://localhost:9001/observe?force=sha256:consensus_fingerprint'
+  'https://premonitory-distortional-jayme.ngrok-free.dev/api/notary/observe',
+  'https://premonitory-distortional-jayme.ngrok-free.dev/api/notary/observe?force=sha256:consensus_fingerprint'
 ];
 
 // Configuration constants
@@ -275,6 +274,46 @@ const TLS_POLICIES = {
   forbiddenCiphers: ['RC4', '3DES'],
   forbiddenSignatures: ['sha1']
 };
+
+// Let's Encrypt issuer detection
+function checkLetsEncryptCertificate(issuer, hostname) {
+  if (!issuer) return { score: 0, severity: 'secure' };
+  
+  const letsEncryptIssuers = [
+    'Let\'s Encrypt',
+    'Let\'s Encrypt Authority',
+    'R3', 'E1'
+  ];
+  
+  const isLetsEncrypt = letsEncryptIssuers.some(le => issuer.includes(le));
+  
+  if (!isLetsEncrypt) {
+    return { score: 0, severity: 'secure' };
+  }
+  
+  // Check if site is sensitive
+  const sensitivePatterns = [
+    /bank|banking|finance|financial/i,
+    /login|auth|secure|account/i,
+    /pay|payment|transaction|checkout/i,
+    /medical|healthcare|insurance/i,
+    /government|gov|state/i
+  ];
+  
+  const isSensitive = sensitivePatterns.some(pattern => pattern.test(hostname));
+  
+  if (isSensitive) {
+    console.warn(`⚠️ Let's Encrypt certificate on sensitive site: ${hostname}`);
+    return {
+      score: 25,
+      severity: 'warning',
+      warning: 'Let\'s Encrypt certificates are free and auto-issued, making MITM attacks easier',
+      recommendation: 'Consider using Extended Validation (EV) certificate'
+    };
+  }
+  
+  return { score: 0, severity: 'secure' };
+}
 
 // Certificate issuer drift detection
 function detectIssuerDrift(hostname, newCertificate) {
@@ -318,7 +357,22 @@ function detectIssuerDrift(hostname, newCertificate) {
   return false;
 }
 
-// Session consistency check with simulation mode handling
+/**
+ * Session Consistency Check
+ * 
+ * Detects certificate changes BETWEEN page navigations on the same domain.
+ * NOT detecting same-connection TLS renegotiation (not possible in MV3, and rare in practice).
+ * 
+ * Realistic attack scenarios detected:
+ * - MITM attacker swaps certificates as user navigates between pages
+ * - Load balancer misconfiguration serving different certs
+ * - Corporate SSL inspection proxies changing certificates
+ * - Certificate hijacking during multi-page flows
+ * 
+ * Triggers on: chrome.webNavigation.onCompleted (new page loads in same tab)
+ * 
+ * Example: User visits bank.com → Cert A, then clicks "Transfer" → Cert B (FLAG!)
+ */
 async function checkSessionConsistency(tabId, hostname, newFingerprint) {
   // Skip session checks in simulation mode
   if (await isSimulationModeForOrigin(hostname)) {
@@ -339,7 +393,7 @@ async function checkSessionConsistency(tabId, hostname, newFingerprint) {
     return false;
   }
 
-  // Check for session flip
+  // Check for session flip (certificate changed between navigations)
   if (stored.fingerprint !== newFingerprint) {
     console.warn(`🚨 SESSION FLIP DETECTED for ${hostname} in tab ${tabId}:`, {
       previous: stored.fingerprint,
@@ -675,6 +729,12 @@ async function verifyTlsSecurity(details) {
     // Check for weak TLS
     const weakTlsIssues = detectWeakTls(mockTlsInfo);
     console.log('⚠️ Weak TLS issues:', weakTlsIssues);
+    
+    // Check Let's Encrypt certificate
+    const letsEncryptCheck = checkLetsEncryptCertificate(mockCertInfo.issuer, hostname);
+    if (letsEncryptCheck.score > 0) {
+      console.log('⚠️ Let\'s Encrypt certificate warning:', letsEncryptCheck);
+    }
 
     // Determine severity
     let severity = 'secure';
@@ -686,6 +746,11 @@ async function verifyTlsSecurity(details) {
       cipher: mockTlsInfo.cipherSuite,
       timestamp: Date.now()
     };
+    
+    // Add Let's Encrypt warning if applicable
+    if (letsEncryptCheck.score > 0) {
+      evidence.letsEncryptWarning = letsEncryptCheck;
+    }
 
     if (sessionFlip || issuerDrift) {
       console.log('🚨 High severity detected - querying notaries');
@@ -855,5 +920,71 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.error('🔄 Retry notary error:', error);
       sendResponse({ success: false, error: error.message });
     });
+  } else if (request.action === 'heuristicsResults') {
+    console.log('🔍 Heuristics results received:', request.data);
+    handleHeuristicsResults(request.data, sender);
+    sendResponse({ success: true });
   }
 });
+
+// --- Heuristics Integration ---
+
+// Handle heuristics results from content script
+function handleHeuristicsResults(results, sender) {
+  const tabId = sender.tab?.id;
+  if (!tabId) {
+    console.log('No tab ID for heuristics results');
+    return;
+  }
+  
+  console.log('🔍 Processing heuristics:', {
+    score: results.anomalyScore,
+    severity: results.severity,
+    externalPosts: results.externalPosts,
+    externalLinks: results.externalLinks
+  });
+  
+  // Store heuristics results
+  const hostname = new URL(sender.tab.url).hostname;
+  const storageKey = `heuristics_${hostname}_${Date.now()}`;
+  
+  chrome.storage.local.set({
+    [storageKey]: {
+      ...results,
+      hostname,
+      tabId,
+      timestamp: Date.now()
+    }
+  });
+  
+  // Update badge based on heuristics severity
+  updateBadgeFromHeuristics(tabId, results);
+  
+  // If critical, show warning
+  if (results.severity === 'critical') {
+    console.log('🚨 CRITICAL heuristics detected!');
+    showHeuristicsWarning(tabId, results);
+  }
+}
+
+// Update badge based on heuristics results
+function updateBadgeFromHeuristics(tabId, results) {
+  const badgeMap = {
+    'critical': { text: '🚨', color: '#F44336' },
+    'high': { text: '⚠️', color: '#FF9800' },
+    'warning': { text: '⚠', color: '#FF9800' },
+    'secure': { text: '', color: '#4CAF50' }
+  };
+  
+  const config = badgeMap[results.severity] || badgeMap['secure'];
+  chrome.action.setBadgeText({ text: config.text, tabId });
+  chrome.action.setBadgeBackgroundColor({ color: config.color, tabId });
+}
+
+// Show heuristics warning (similar to interstitial)
+function showHeuristicsWarning(tabId, results) {
+  const warningUrl = chrome.runtime.getURL('warning.html') + 
+    '?reason=heuristics&data=' + encodeURIComponent(JSON.stringify(results));
+  
+  chrome.tabs.update(tabId, { url: warningUrl });
+}

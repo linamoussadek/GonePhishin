@@ -134,6 +134,22 @@ body {
     text-align: center;
 }
 
+/* Heuristics Status Styles */
+.heuristics-status {
+    margin: 15px 0;
+    padding: 15px;
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    border-radius: 8px;
+    color: white;
+}
+
+.heuristics-status h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
 /* Security Alerts Styles */
 .security-alerts {
     margin: 15px 0;
