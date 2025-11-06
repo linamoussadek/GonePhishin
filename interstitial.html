@@ -3,240 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TLS Security Alert - Gone Phishin'</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 600px;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .header {
-            background: #f44336;
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .header .subtitle {
-            font-size: 16px;
-            opacity: 0.9;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .alert-icon {
-            font-size: 48px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .evidence-section {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .evidence-section h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-
-        .evidence-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .evidence-item:last-child {
-            border-bottom: none;
-        }
-
-        .evidence-label {
-            font-weight: 600;
-            color: #495057;
-        }
-
-        .evidence-value {
-            font-family: 'Courier New', monospace;
-            background: #e9ecef;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            word-break: break-all;
-        }
-
-        .notary-results {
-            margin-top: 15px;
-        }
-
-        .notary-item {
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 12px;
-            margin: 8px 0;
-        }
-
-        .notary-endpoint {
-            font-weight: 600;
-            color: #495057;
-        }
-
-        .notary-fingerprint {
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            color: #6c757d;
-            margin-top: 4px;
-        }
-
-        .actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 15px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #218838;
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #c82333;
-        }
-
-        .warning-text {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 6px;
-            padding: 15px;
-            margin: 20px 0;
-            color: #856404;
-        }
-
-        .timestamp {
-            color: #6c757d;
-            font-size: 14px;
-            text-align: center;
-            margin-top: 20px;
-        }
-    </style>
+    <title>Security Alert - Gone Phishin'</title>
+    <link rel="stylesheet" href="interstitial.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="alert-icon">🚨</div>
-            <h1>Potential TLS Interception Detected</h1>
-            <p class="subtitle">Your connection may be compromised</p>
-        </div>
-
-        <div class="content">
-            <div class="warning-text">
-                <strong>Security Alert:</strong> We've detected unusual certificate behavior that may indicate a man-in-the-middle attack or certificate tampering. Proceeding could expose your sensitive data.
+    <div class="interstitial-container">
+        <!-- Header Section -->
+        <header class="alert-header critical">
+            <div class="header-content">
+                <div class="alert-icon-large">🚨</div>
+                <div class="header-text">
+                    <h1>Potential Security Threat Detected</h1>
+                    <p class="subtitle">Certificate verification failed - possible MITM attack</p>
+                </div>
             </div>
+        </header>
 
-            <div class="evidence-section">
-                <h3>🔍 Evidence Details</h3>
-                <div class="evidence-item">
-                    <span class="evidence-label">Hostname:</span>
-                    <span class="evidence-value" id="hostname">Loading...</span>
-                </div>
-                <div class="evidence-item">
-                    <span class="evidence-label">Local Certificate:</span>
-                    <span class="evidence-value" id="localFingerprint">Loading...</span>
-                </div>
-                <div class="evidence-item">
-                    <span class="evidence-label">Issuer:</span>
-                    <span class="evidence-value" id="issuer">Loading...</span>
-                </div>
-                <div class="evidence-item">
-                    <span class="evidence-label">TLS Version:</span>
-                    <span class="evidence-value" id="protocol">Loading...</span>
-                </div>
-                <div class="evidence-item">
-                    <span class="evidence-label">Cipher Suite:</span>
-                    <span class="evidence-value" id="cipher">Loading...</span>
-                </div>
-                <div class="evidence-item">
-                    <span class="evidence-label">Notary Consensus:</span>
-                    <span class="evidence-value" id="consensus">Loading...</span>
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Warning Banner -->
+            <div class="warning-banner">
+                <div class="warning-icon">⚠️</div>
+                <div class="warning-text">
+                    <strong>Security Alert:</strong> We've detected unusual certificate behavior that may indicate a man-in-the-middle attack or certificate tampering. Proceeding could expose your sensitive data to attackers.
                 </div>
             </div>
 
-            <div class="evidence-section" id="notarySection" style="display: none;">
-                <h3>🌐 Notary Verification Results</h3>
-                <div id="notaryResults"></div>
-            </div>
+            <!-- Site Information -->
+            <section class="info-card">
+                <h2 class="section-title">
+                    <span class="section-icon">🌐</span>
+                    Site Information
+                </h2>
+                <div class="info-grid">
+                    <div class="info-row">
+                        <span class="info-label">Hostname:</span>
+                        <span class="info-value" id="hostname">Loading...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Certificate Fingerprint:</span>
+                        <span class="info-value code" id="localFingerprint">Loading...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Certificate Issuer:</span>
+                        <span class="info-value" id="issuer">Loading...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">TLS Protocol:</span>
+                        <span class="info-value" id="protocol">Loading...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Cipher Suite:</span>
+                        <span class="info-value code" id="cipher">Loading...</span>
+                    </div>
+                </div>
+            </section>
 
+            <!-- Notary Consensus Results -->
+            <section class="info-card" id="notarySection" style="display: none;">
+                <h2 class="section-title">
+                    <span class="section-icon">🌐</span>
+                    Notary Consensus Analysis
+                </h2>
+                <div class="consensus-summary" id="consensusSummary">
+                    <div class="consensus-status" id="consensusStatus">
+                        <span class="status-icon">⏳</span>
+                        <span class="status-text">Analyzing consensus...</span>
+                    </div>
+                </div>
+                <div class="notary-results" id="notaryResults"></div>
+                <div class="consensus-explanation" id="consensusExplanation"></div>
+            </section>
+
+            <!-- Threat Analysis -->
+            <section class="info-card threat-analysis" id="threatAnalysis" style="display: none;">
+                <h2 class="section-title">
+                    <span class="section-icon">🔍</span>
+                    Threat Analysis
+                </h2>
+                <div class="threat-details" id="threatDetails"></div>
+            </section>
+
+            <!-- Educational Section -->
+            <section class="info-card educational">
+                <h2 class="section-title">
+                    <span class="section-icon">📚</span>
+                    What This Means
+                </h2>
+                <div class="educational-content">
+                    <div class="edu-item">
+                        <h3>🔐 Certificate Mismatch</h3>
+                        <p>Our notary servers reported a different certificate fingerprint than what your browser received. This could indicate:</p>
+                        <ul>
+                            <li>A man-in-the-middle (MITM) attack intercepting your connection</li>
+                            <li>Corporate or ISP proxy with certificate inspection</li>
+                            <li>Malware on your system intercepting traffic</li>
+                            <li>Network misconfiguration</li>
+                        </ul>
+                    </div>
+                    <div class="edu-item">
+                        <h3>🛡️ How Notary Consensus Works</h3>
+                        <p>We query multiple independent notary servers to verify certificates. If they all agree but differ from your local certificate, it indicates a potential attack.</p>
+                    </div>
+                    <div class="edu-item">
+                        <h3>⚠️ What You Should Do</h3>
+                        <ul>
+                            <li><strong>Do not proceed</strong> if you're on a public or untrusted network</li>
+                            <li>Check if you're behind a corporate proxy (ask your IT department)</li>
+                            <li>Verify your network connection is secure</li>
+                            <li>Consider using a VPN if you must access this site</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Action Buttons -->
             <div class="actions">
-                <button class="btn btn-secondary" id="goBackBtn">← Go Back</button>
-                <button class="btn btn-danger" id="proceedBtn">⚠ Proceed Anyway</button>
-                <button class="btn btn-primary" id="pinBtn">📌 Pin for 24h</button>
+                <button class="btn btn-safe" id="goBackBtn">
+                    <span class="btn-icon">←</span>
+                    <span>Go Back Safely</span>
+                </button>
+                <button class="btn btn-warning" id="pinBtn">
+                    <span class="btn-icon">📌</span>
+                    <span>Pin for 24h</span>
+                </button>
+                <button class="btn btn-danger" id="proceedBtn">
+                    <span class="btn-icon">⚠️</span>
+                    <span>Proceed Anyway</span>
+                </button>
             </div>
 
-            <div class="timestamp" id="timestamp"></div>
-        </div>
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="timestamp" id="timestamp"></div>
+                <p class="footer-note">This alert was generated by Gone Phishin' security extension</p>
+            </footer>
+        </main>
     </div>
 
     <script src="interstitial.js"></script>

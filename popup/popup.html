@@ -3,98 +3,294 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gone Phishin'</title>
+    <title>Gone Phishin' - Advanced Security Protection</title>
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Gone Phishin'</h1>
-            <p>MITM Detection Extension</p>
+    <!-- Header with Gradient -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo-icon">🛡️</div>
+                <div class="logo-text">
+                    <h1>Gone Phishin'</h1>
+                    <p class="tagline">Multi-Layer Security Protection</p>
+                </div>
+            </div>
+            <div class="global-status" id="globalStatus">
+                <div class="status-pulse" id="statusPulse"></div>
+                <span class="status-label" id="statusLabel">Active</span>
+            </div>
         </div>
-        
-        <div class="content">
-            <div class="status">
-                <span class="status-dot"></span>
-                <span>Extension Ready</span>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Current Site Security Card -->
+        <section class="card current-site-card" id="currentSiteCard">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <h2>🌐 Current Site Analysis</h2>
+                    <span class="card-subtitle" id="siteTimestamp">Just now</span>
+                </div>
+                <div class="security-badge" id="securityBadge">
+                    <span class="badge-icon" id="badgeIcon">🔒</span>
+                    <span class="badge-text" id="badgeText">Analyzing...</span>
+                </div>
+            </div>
+            <div class="site-info">
+                <div class="site-url-container">
+                    <div class="site-url" id="currentSiteUrl">Loading current site...</div>
+                    <button class="info-icon-btn" id="siteInfoBtn" title="View detailed analysis">ℹ️</button>
+                </div>
+                <div class="site-status-bar">
+                    <div class="status-indicator" id="siteStatusIndicator"></div>
+                    <span class="site-status-text" id="siteStatusText">Initializing security scan...</span>
+                </div>
             </div>
             
-            <!-- HTTPS Upgrade Statistics -->
-            <div class="https-stats">
-                <h2>🔒 HTTPS Protection</h2>
-                <div class="stat-item">
-                    <span class="stat-label">Total Upgrades:</span>
-                    <span class="stat-value" id="totalUpgrades">0</span>
+            <!-- Quick Stats -->
+            <div class="quick-stats" id="quickStats" style="display: none;">
+                <div class="quick-stat-item">
+                    <span class="stat-icon">🔐</span>
+                    <div class="stat-content">
+                        <div class="stat-value" id="tlsVersionQuick">-</div>
+                        <div class="stat-label">TLS Version</div>
+                    </div>
                 </div>
-                <div class="stat-item" id="lastUpgradeSection" style="display: none;">
-                    <span class="stat-label">Last Upgrade:</span>
-                    <span class="stat-value" id="lastUpgrade">None</span>
+                <div class="quick-stat-item">
+                    <span class="stat-icon">🏛️</span>
+                    <div class="stat-content">
+                        <div class="stat-value" id="certIssuerQuick">-</div>
+                        <div class="stat-label">Certificate Issuer</div>
+                    </div>
                 </div>
-                <div class="info-message">
-                    ✅ Automatically upgrading HTTP to HTTPS
-                </div>
-            </div>
-
-            <!-- TLS Security Status -->
-            <div class="tls-status">
-                <h2>🛡️ TLS Security</h2>
-                <div class="stat-item">
-                    <span class="stat-label">Current Site:</span>
-                    <span class="stat-value" id="currentSite">Loading...</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Certificate Status:</span>
-                    <span class="stat-value" id="certStatus">Unknown</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Notary Consensus:</span>
-                    <span class="stat-value" id="notaryConsensus">Unknown</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">TLS Version:</span>
-                    <span class="stat-value" id="tlsVersion">Unknown</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Issuer:</span>
-                    <span class="stat-value" id="certIssuer">Unknown</span>
+                <div class="quick-stat-item">
+                    <span class="stat-icon">🤝</span>
+                    <div class="stat-content">
+                        <div class="stat-value" id="notaryConsensusQuick">-</div>
+                        <div class="stat-label">Notary Consensus</div>
+                    </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Heuristics Analysis -->
-            <div class="heuristics-status" id="heuristicsStatus" style="display: none;">
-                <h2>🔍 Heuristics Analysis</h2>
-                <div class="stat-item">
-                    <span class="stat-label">Anomaly Score:</span>
-                    <span class="stat-value" id="heuristicScore">0</span>
-                </div>
-                <div class="stat-item" id="externalPostsItem" style="display: none;">
-                    <span class="stat-label">External POSTs:</span>
-                    <span class="stat-value" id="externalPosts">0</span>
-                </div>
-                <div class="stat-item" id="externalLinksItem" style="display: none;">
-                    <span class="stat-label">External Links:</span>
-                    <span class="stat-value" id="externalLinks">0</span>
-                </div>
-            </div>
-
-            <!-- Security Alerts -->
-            <div class="security-alerts" id="securityAlerts" style="display: none;">
-                <h2>⚠️ Security Alerts</h2>
-                <div id="alertsList"></div>
+        <!-- Protection Layers Visualization -->
+        <section class="card protection-layers-card">
+            <div class="card-header">
+                <h2>🛡️ Protection Layers</h2>
+                <button class="info-btn" id="layersInfoBtn" title="Learn about protection layers">
+                    <span>ℹ️</span>
+                </button>
             </div>
             
-            <div class="dashboardButton">
-                <button id="openDashboard">Dashboard</button>
+            <div class="layers-container">
+                <!-- Layer 1: HTTPS Enforcement -->
+                <div class="protection-layer" id="layerHttps" data-layer="https">
+                    <div class="layer-header">
+                        <div class="layer-icon-wrapper">
+                            <div class="layer-icon">🔒</div>
+                            <div class="layer-status-indicator" id="httpsIndicator"></div>
+                        </div>
+                        <div class="layer-info">
+                            <h3 class="layer-name">HTTPS Enforcement</h3>
+                            <p class="layer-description">Automatically upgrades insecure HTTP connections</p>
+                        </div>
+                        <div class="layer-status" id="httpsStatus">
+                            <span class="status-text">Active</span>
+                        </div>
+                    </div>
+                    <div class="layer-progress" id="httpsProgress">
+                        <div class="progress-bar" style="width: 100%"></div>
+                    </div>
+                    <button class="layer-details-btn" data-layer="https">View Details →</button>
+                </div>
+
+                <!-- Layer 2: TLS Verification -->
+                <div class="protection-layer" id="layerTls" data-layer="tls">
+                    <div class="layer-header">
+                        <div class="layer-icon-wrapper">
+                            <div class="layer-icon">🔐</div>
+                            <div class="layer-status-indicator" id="tlsIndicator"></div>
+                        </div>
+                        <div class="layer-info">
+                            <h3 class="layer-name">TLS Certificate Verification</h3>
+                            <p class="layer-description">Validates SSL/TLS certificates for authenticity</p>
+                        </div>
+                        <div class="layer-status" id="tlsStatus">
+                            <span class="status-text">Verifying...</span>
+                        </div>
+                    </div>
+                    <div class="layer-progress" id="tlsProgress">
+                        <div class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <button class="layer-details-btn" data-layer="tls">View Details →</button>
+                </div>
+
+                <!-- Layer 3: Notary Consensus -->
+                <div class="protection-layer" id="layerNotary" data-layer="notary">
+                    <div class="layer-header">
+                        <div class="layer-icon-wrapper">
+                            <div class="layer-icon">🌐</div>
+                            <div class="layer-status-indicator" id="notaryIndicator"></div>
+                        </div>
+                        <div class="layer-info">
+                            <h3 class="layer-name">Notary Consensus</h3>
+                            <p class="layer-description">Cross-validates with independent notary servers</p>
+                        </div>
+                        <div class="layer-status" id="notaryStatus">
+                            <span class="status-text">Querying...</span>
+                        </div>
+                    </div>
+                    <div class="layer-progress" id="notaryProgress">
+                        <div class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="layer-metrics" id="notaryMetrics" style="display: none;">
+                        <div class="metric-item">
+                            <span class="metric-label">Notaries Queried:</span>
+                            <span class="metric-value" id="notaryQueried">0</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Consensus:</span>
+                            <span class="metric-value" id="notaryConsensusValue">-</span>
+                        </div>
+                    </div>
+                    <button class="layer-details-btn" data-layer="notary">View Details →</button>
+                </div>
+
+                <!-- Layer 4: Heuristic Analysis -->
+                <div class="protection-layer" id="layerHeuristics" data-layer="heuristics">
+                    <div class="layer-header">
+                        <div class="layer-icon-wrapper">
+                            <div class="layer-icon">🔍</div>
+                            <div class="layer-status-indicator" id="heuristicsIndicator"></div>
+                        </div>
+                        <div class="layer-info">
+                            <h3 class="layer-name">Heuristic Analysis</h3>
+                            <p class="layer-description">AI-powered phishing detection and content analysis</p>
+                        </div>
+                        <div class="layer-status" id="heuristicsStatus">
+                            <span class="status-text">Scanning...</span>
+                        </div>
+                    </div>
+                    <div class="layer-progress" id="heuristicsProgress">
+                        <div class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="layer-metrics" id="heuristicsMetrics" style="display: none;">
+                        <div class="metric-item">
+                            <span class="metric-label">Anomaly Score:</span>
+                            <span class="metric-value" id="anomalyScore">0</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">External Links:</span>
+                            <span class="metric-value" id="externalLinksCount">0</span>
+                        </div>
+                    </div>
+                    <button class="layer-details-btn" data-layer="heuristics">View Details →</button>
+                </div>
             </div>
-            
-        <div class="testButton">
-            <button id="testTls">🧪 Test TLS Check</button>
-            <button id="clearRateLimit">🧹 Clear Rate Limit</button>
-            <button id="retryNotary">🔄 Retry Notary Check</button>
+        </section>
+
+        <!-- Security Alerts -->
+        <section class="card alerts-card" id="alertsCard" style="display: none;">
+            <div class="card-header alert-header">
+                <div class="alert-header-content">
+                    <h2>⚠️ Security Alerts</h2>
+                    <span class="alert-badge" id="alertCount">0</span>
+                </div>
+            </div>
+            <div class="alerts-list" id="alertsList"></div>
+        </section>
+
+        <!-- Recent Activity -->
+        <section class="card recent-activity-card">
+            <div class="card-header">
+                <h2>📊 Recent Activity</h2>
+                <button class="view-all-btn" id="viewAllActivity">View All →</button>
+            </div>
+            <div class="activity-timeline" id="activityTimeline">
+                <div class="activity-item loading">
+                    <div class="activity-icon">⏳</div>
+                    <div class="activity-content">
+                        <div class="activity-title">Loading activity...</div>
+                        <div class="activity-time">-</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistics Summary -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon-wrapper secure">
+                    <span class="stat-icon">🔒</span>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="totalUpgrades">0</div>
+                    <div class="stat-label">HTTPS Upgrades</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon-wrapper protected">
+                    <span class="stat-icon">🛡️</span>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="sitesProtected">0</div>
+                    <div class="stat-label">Sites Protected</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon-wrapper threats">
+                    <span class="stat-icon">🚨</span>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="threatsBlocked">0</div>
+                    <div class="stat-label">Threats Blocked</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Action Buttons -->
+        <div class="actions">
+            <button class="btn btn-primary" id="openDashboard">
+                <span class="btn-icon">📊</span>
+                <span>Full Dashboard</span>
+            </button>
+            <button class="btn btn-secondary" id="refreshStatus">
+                <span class="btn-icon">🔄</span>
+                <span>Refresh</span>
+            </button>
         </div>
+    </main>
+
+    <!-- Protection Layer Details Modal -->
+    <div class="modal" id="layerModal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Protection Layer Details</h2>
+                <button class="modal-close" id="closeModal">×</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content will be dynamically inserted -->
+            </div>
         </div>
     </div>
-    
+
+    <!-- Site Info Modal -->
+    <div class="modal" id="siteInfoModal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>🔍 Detailed Security Analysis</h2>
+                <button class="modal-close" id="closeSiteModal">×</button>
+            </div>
+            <div class="modal-body" id="siteInfoBody">
+                <!-- Detailed site analysis will be inserted here -->
+            </div>
+        </div>
+    </div>
+
     <script src="popup.js"></script>
 </body>
 </html>

@@ -1,44 +1,479 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gone Phishin' - Security Dashboard</title>
     <link rel="stylesheet" href="dashboard.css">
-    <title>GonePhishin Dashboard</title>
-  </head>
-
-  <body>
-    
-    <div class="rectangle">
-
-       
-      <div class="profile-container">
-        <img src="./images/pfp.jpg" class="circle-img" alt="Example profile picture">
-        <h1 class="username">uOttawa</h1>
-        <p id="daysPassed"></p>
-      </div>
-
-        <div class="menu">
-          <button class = "menuButtons" id="xxx">xxx</button>
-          <button class = "menuButtons" id="xxx">xxx</button>
-          <button class = "menuButtons" id="xxx">xxx</button>
-          <button class = "menuButtons" id="permission">Permission</button>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo-icon">🛡️</div>
+                <div class="logo-text">
+                    <h1>Gone Phishin'</h1>
+                    <p class="tagline">Security Dashboard</p>
+                </div>
+            </div>
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-tab="overview">Overview</button>
+                <button class="nav-tab" data-tab="site-analysis">Site Analysis</button>
+                <button class="nav-tab" data-tab="protection">Protection</button>
+                <button class="nav-tab" data-tab="threats">Threats</button>
+                <button class="nav-tab" data-tab="reports">Reports</button>
+                <button class="nav-tab" data-tab="technical">Technical</button>
+            </nav>
         </div>
+    </header>
 
+    <!-- Main Content -->
+    <main class="dashboard-content">
+        <!-- Overview Tab -->
+        <section class="tab-content active" id="overviewTab">
+            <!-- Statistics Cards -->
+            <div class="stats-grid-large">
+                <div class="stat-card-large secure">
+                    <div class="stat-header">
+                        <div class="stat-icon-large">🔒</div>
+                        <div class="stat-info-large">
+                            <div class="stat-value-large" id="totalUpgradesLarge">0</div>
+                            <div class="stat-label-large">HTTPS Upgrades</div>
+                        </div>
+                    </div>
+                    <div class="stat-trend" id="upgradesTrend">+0% from last week</div>
+                </div>
+
+                <div class="stat-card-large protected">
+                    <div class="stat-header">
+                        <div class="stat-icon-large">🛡️</div>
+                        <div class="stat-info-large">
+                            <div class="stat-value-large" id="sitesProtectedLarge">0</div>
+                            <div class="stat-label-large">Sites Protected</div>
+                        </div>
+                    </div>
+                    <div class="stat-trend" id="protectedTrend">0 unique domains</div>
+                </div>
+
+                <div class="stat-card-large threats">
+                    <div class="stat-header">
+                        <div class="stat-icon-large">🚨</div>
+                        <div class="stat-info-large">
+                            <div class="stat-value-large" id="threatsBlockedLarge">0</div>
+                            <div class="stat-label-large">Threats Blocked</div>
+                        </div>
+                    </div>
+                    <div class="stat-trend" id="threatsTrend">0 today</div>
+                </div>
+
+                <div class="stat-card-large notary">
+                    <div class="stat-header">
+                        <div class="stat-icon-large">🌐</div>
+                        <div class="stat-info-large">
+                            <div class="stat-value-large" id="notaryQueriesLarge">0</div>
+                            <div class="stat-label-large">Notary Queries</div>
+                        </div>
+                    </div>
+                    <div class="stat-trend" id="notaryTrend">0 successful</div>
+                </div>
+            </div>
+
+            <!-- Protection Layers Overview -->
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>🛡️ Protection Layers Status</h2>
+                    <button class="info-btn" id="layersOverviewBtn">ℹ️</button>
+                </div>
+                <div class="layers-overview-grid">
+                    <div class="layer-overview-card" data-layer="https">
+                        <div class="layer-overview-header">
+                            <div class="layer-overview-icon">🔒</div>
+                            <h3>HTTPS Enforcement</h3>
+                        </div>
+                        <div class="layer-overview-status active">Active</div>
+                        <div class="layer-overview-description">
+                            Automatically upgrades HTTP to HTTPS connections
+                        </div>
+                        <div class="layer-overview-stats">
+                            <div class="overview-stat">
+                                <span class="overview-stat-label">Upgrades:</span>
+                                <span class="overview-stat-value" id="httpsUpgrades">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="layer-overview-card" data-layer="tls">
+                        <div class="layer-overview-header">
+                            <div class="layer-overview-icon">🔐</div>
+                            <h3>TLS Verification</h3>
+                        </div>
+                        <div class="layer-overview-status" id="tlsOverviewStatus">Checking...</div>
+                        <div class="layer-overview-description">
+                            Validates SSL/TLS certificates for authenticity
+                        </div>
+                        <div class="layer-overview-stats">
+                            <div class="overview-stat">
+                                <span class="overview-stat-label">Verified:</span>
+                                <span class="overview-stat-value" id="tlsVerified">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="layer-overview-card" data-layer="notary">
+                        <div class="layer-overview-header">
+                            <div class="layer-overview-icon">🌐</div>
+                            <h3>Notary Consensus</h3>
+                        </div>
+                        <div class="layer-overview-status" id="notaryOverviewStatus">Active</div>
+                        <div class="layer-overview-description">
+                            Cross-validates with independent notary servers
+                        </div>
+                        <div class="layer-overview-stats">
+                            <div class="overview-stat">
+                                <span class="overview-stat-label">Queries:</span>
+                                <span class="overview-stat-value" id="notaryQueries">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="layer-overview-card" data-layer="heuristics">
+                        <div class="layer-overview-header">
+                            <div class="layer-overview-icon">🔍</div>
+                            <h3>Heuristic Analysis</h3>
+                        </div>
+                        <div class="layer-overview-status" id="heuristicsOverviewStatus">Active</div>
+                        <div class="layer-overview-description">
+                            AI-powered phishing and threat detection
+                        </div>
+                        <div class="layer-overview-stats">
+                            <div class="overview-stat">
+                                <span class="overview-stat-label">Scanned:</span>
+                                <span class="overview-stat-value" id="heuristicsScanned">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Activity Timeline -->
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>📊 Recent Activity</h2>
+                    <button class="view-all-btn" id="viewAllActivityBtn">View All →</button>
+                </div>
+                <div class="activity-timeline-large" id="activityTimelineLarge">
+                    <!-- Activity items will be inserted here -->
+                </div>
+            </section>
+        </section>
+
+        <!-- Protection Tab -->
+        <section class="tab-content" id="protectionTab">
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>🛡️ Protection Layers Explained</h2>
+                </div>
+                
+                <div class="protection-details">
+                    <!-- HTTPS Enforcement -->
+                    <div class="protection-detail-card">
+                        <div class="protection-detail-header">
+                            <div class="protection-detail-icon">🔒</div>
+                            <div class="protection-detail-title">
+                                <h3>HTTPS Enforcement</h3>
+                                <span class="protection-status-badge active">Active</span>
+                            </div>
+                        </div>
+                        <div class="protection-detail-content">
+                            <p class="protection-description">
+                                Automatically upgrades insecure HTTP connections to secure HTTPS, preventing data interception and man-in-the-middle attacks.
+                            </p>
+                            <div class="protection-how-it-works">
+                                <h4>How It Works:</h4>
+                                <ol>
+                                    <li>Monitors all network requests in real-time</li>
+                                    <li>Detects HTTP connections to HTTPS-capable sites</li>
+                                    <li>Automatically redirects to HTTPS version</li>
+                                    <li>Blocks mixed content (HTTP resources on HTTPS pages)</li>
+                                </ol>
+                            </div>
+                            <div class="protection-stats-grid">
+                                <div class="protection-stat">
+                                    <div class="protection-stat-value" id="httpsUpgradesDetail">0</div>
+                                    <div class="protection-stat-label">Total Upgrades</div>
+                                </div>
+                                <div class="protection-stat">
+                                    <div class="protection-stat-value" id="httpsBlocks">0</div>
+                                    <div class="protection-stat-label">Mixed Content Blocked</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TLS Verification -->
+                    <div class="protection-detail-card">
+                        <div class="protection-detail-header">
+                            <div class="protection-detail-icon">🔐</div>
+                            <div class="protection-detail-title">
+                                <h3>TLS Certificate Verification</h3>
+                                <span class="protection-status-badge" id="tlsDetailStatus">Active</span>
+                            </div>
+                        </div>
+                        <div class="protection-detail-content">
+                            <p class="protection-description">
+                                Validates SSL/TLS certificates to ensure they're legitimate, properly signed, and haven't been tampered with or expired.
+                            </p>
+                            <div class="protection-how-it-works">
+                                <h4>How It Works:</h4>
+                                <ol>
+                                    <li>Extracts certificate information from TLS handshake</li>
+                                    <li>Validates certificate chain and signatures</li>
+                                    <li>Checks expiration dates and validity periods</li>
+                                    <li>Verifies certificate authority (CA) trust</li>
+                                    <li>Detects certificate pinning violations</li>
+                                </ol>
+                            </div>
+                            <div class="protection-stats-grid">
+                                <div class="protection-stat">
+                                    <div class="protection-stat-value" id="tlsVerifiedDetail">0</div>
+                                    <div class="protection-stat-label">Certificates Verified</div>
+                                </div>
+                                <div class="protection-stat">
+                                    <div class="protection-stat-value" id="tlsWarnings">0</div>
+                                    <div class="protection-stat-label">Warnings Detected</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notary Consensus -->
+                    <div class="protection-detail-card">
+                        <div class="protection-detail-header">
+                            <div class="protection-detail-icon">🌐</div>
+                            <div class="protection-detail-title">
+                                <h3>Notary Consensus</h3>
+                                <span class="protection-status-badge active">Active</span>
+                            </div>
+                        </div>
+                        <div class="protection-detail-content">
+                            <p class="protection-description">
+                                Cross-validates certificates with multiple independent notary servers to detect man-in-the-middle attacks and certificate pinning violations.
+                            </p>
+                            <div class="protection-how-it-works">
+                                <h4>How It Works:</h4>
+                                <ol>
+                                    <li>Queries multiple independent notary servers simultaneously</li>
+                                    <li>Each notary server independently verifies the certificate</li>
+                                    <li>Compares notary responses with local certificate</li>
+                                    <li>Detects discrepancies indicating MITM attacks</li>
+                                    <li>Uses consensus algorithm to determine threat level</li>
+                                </ol>
+                            </div>
+                            <div class="protection-stats-grid">
+                                <div class="protection-stat">
+                                    <div class="protection-stat-value" id="notaryQueriesDetail">0</div>
+                                    <div class="protection-stat-label">Notary Queries</div>
+                                </div>
+                                <div class="protection-stat">
+                                    <div class="protection-stat-value" id="notaryConsensusCount">0</div>
+                                    <div class="protection-stat-label">Consensus Achieved</div>
+                                </div>
+                                <div class="protection-stat">
+                                    <div class="protection-stat-value" id="mitmDetected">0</div>
+                                    <div class="protection-stat-label">MITM Detected</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Heuristic Analysis -->
+                    <div class="protection-detail-card">
+                        <div class="protection-detail-header">
+                            <div class="protection-detail-icon">🔍</div>
+                            <div class="protection-detail-title">
+                                <h3>Heuristic Analysis</h3>
+                                <span class="protection-status-badge active">Active</span>
+                            </div>
+                        </div>
+                        <div class="protection-detail-content">
+                            <p class="protection-description">
+                                AI-powered content analysis that detects phishing attempts, suspicious patterns, and malicious behavior through machine learning algorithms.
+                            </p>
+                            <div class="protection-how-it-works">
+                                <h4>How It Works:</h4>
+                                <ol>
+                                    <li>Analyzes page content and structure</li>
+                                    <li>Examines link patterns and external domains</li>
+                                    <li>Detects suspicious form behavior</li>
+                                    <li>Identifies phishing indicators (typosquatting, etc.)</li>
+                                    <li>Calculates anomaly score based on multiple factors</li>
+                                </ol>
+                            </div>
+                            <div class="protection-stats-grid">
+                                <div class="protection-stat">
+                                    <div class="protection-stat-value" id="heuristicsScannedDetail">0</div>
+                                    <div class="protection-stat-label">Pages Scanned</div>
+                                </div>
+                                <div class="protection-stat">
+                                    <div class="protection-stat-value" id="phishingDetected">0</div>
+                                    <div class="protection-stat-label">Phishing Detected</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <!-- Threats Tab -->
+        <section class="tab-content" id="threatsTab">
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>🚨 Security Threats & Alerts</h2>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="critical">Critical</button>
+                        <button class="filter-btn" data-filter="warning">Warnings</button>
+                    </div>
+                </div>
+                
+                <div class="threats-list" id="threatsList">
+                    <!-- Threats will be inserted here -->
+                </div>
+            </section>
+
+            <!-- Threat Statistics -->
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>📈 Threat Statistics</h2>
+                </div>
+                <div class="threat-stats-grid">
+                    <div class="threat-stat-card critical">
+                        <div class="threat-stat-icon">🚨</div>
+                        <div class="threat-stat-info">
+                            <div class="threat-stat-value" id="criticalThreats">0</div>
+                            <div class="threat-stat-label">Critical Threats</div>
+                        </div>
+                    </div>
+                    <div class="threat-stat-card warning">
+                        <div class="threat-stat-icon">⚠️</div>
+                        <div class="threat-stat-info">
+                            <div class="threat-stat-value" id="warningThreats">0</div>
+                            <div class="threat-stat-label">Warnings</div>
+                        </div>
+                    </div>
+                    <div class="threat-stat-card mitm">
+                        <div class="threat-stat-icon">🌐</div>
+                        <div class="threat-stat-info">
+                            <div class="threat-stat-value" id="mitmThreats">0</div>
+                            <div class="threat-stat-label">MITM Attempts</div>
+                        </div>
+                    </div>
+                    <div class="threat-stat-card phishing">
+                        <div class="threat-stat-icon">🎣</div>
+                        <div class="threat-stat-info">
+                            <div class="threat-stat-value" id="phishingThreats">0</div>
+                            <div class="threat-stat-label">Phishing Sites</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <!-- Reports Tab -->
+        <section class="tab-content" id="reportsTab">
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>📋 Security Reports</h2>
+                    <button class="btn btn-primary" id="exportReportBtn">
+                        <span class="btn-icon">📥</span>
+                        <span>Export Report</span>
+                    </button>
+                </div>
+                
+                <!-- Report Filters -->
+                <div class="report-filters">
+                    <select class="filter-select" id="reportTimeFilter">
+                        <option value="24h">Last 24 Hours</option>
+                        <option value="7d" selected>Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                        <option value="all">All Time</option>
+                    </select>
+                    <select class="filter-select" id="reportSeverityFilter">
+                        <option value="all">All Severities</option>
+                        <option value="critical">Critical Only</option>
+                        <option value="warning">Warnings Only</option>
+                        <option value="secure">Secure Only</option>
+                    </select>
+                </div>
+
+                <!-- Reports List -->
+                <div class="reports-list" id="reportsList">
+                    <!-- Reports will be inserted here -->
+                </div>
+            </section>
+        </section>
+
+        <!-- Site Analysis Tab -->
+        <section class="tab-content" id="site-analysisTab">
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>🔬 Site Analysis</h2>
+                    <div class="site-selector-container">
+                        <select class="site-selector" id="siteSelector">
+                            <option value="">Select a site to analyze...</option>
+                        </select>
+                        <button class="btn btn-secondary" id="analyzeCurrentSiteBtn">
+                            <span class="btn-icon">🌐</span>
+                            <span>Analyze Current Site</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Site Analysis Container -->
+                <div class="site-analysis-container" id="siteAnalysisContainer">
+                    <div class="analysis-placeholder">
+                        <div class="placeholder-icon">🔍</div>
+                        <h3>Select a Site to Analyze</h3>
+                        <p>Choose a site from the dropdown above or click "Analyze Current Site" to view comprehensive security analysis.</p>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <!-- Technical Details Tab -->
+        <section class="tab-content" id="technicalTab">
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>🔬 Technical Analysis</h2>
+                    <button class="btn btn-secondary" id="refreshTechnicalBtn">
+                        <span class="btn-icon">🔄</span>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+                
+                <!-- Technical Details Container -->
+                <div class="technical-container" id="technicalContainer">
+                    <div class="technical-loading">Loading technical data...</div>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div class="modal" id="layerInfoModal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Protection Layer Information</h2>
+                <button class="modal-close" id="closeModal">×</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
     </div>
 
-    <div class="right-column">
-      <div class="medal">
-        <h2>Medals and Achievements:</h2>
-      </div>
-
-      <div class="summary">
-        <h2>Website Blocked:</h2>
-        <h2>Type of Attacks:</h2>
-      </div>
-
-    </div>
-
-
+    <script src="site-analysis.js"></script>
     <script src="dashboard.js"></script>
-  </body>
+</body>
 </html>

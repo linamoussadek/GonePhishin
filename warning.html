@@ -1,31 +1,98 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Connection Downgrade Blocked</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="warning.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insecure Redirect Blocked - Gone Phishin'</title>
+    <link rel="stylesheet" href="warning.css">
 </head>
 <body>
-  <div class="wrap">
-    <h1>We blocked an insecure redirect</h1>
-    <p>
-      This page attempted to redirect your secure (HTTPS) connection to
-      an insecure (HTTP) one. That can be a sign of a downgrade attack (a step in SSL stripping).
-    </p>
-    <div class="card">
-      <div id="target"></div>
+    <div class="warning-container">
+        <!-- Header -->
+        <header class="warning-header">
+            <div class="header-content">
+                <div class="warning-icon-large">🔒</div>
+                <div class="header-text">
+                    <h1>Insecure Redirect Blocked</h1>
+                    <p class="subtitle">HTTPS → HTTP downgrade detected</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Alert Banner -->
+            <div class="alert-banner">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-text">
+                    <strong>Security Warning:</strong> This page attempted to redirect your secure (HTTPS) connection to an insecure (HTTP) one. This can be a sign of a downgrade attack (SSL stripping).
+                </div>
+            </div>
+
+            <!-- Target URL -->
+            <section class="info-card">
+                <h2 class="section-title">
+                    <span class="section-icon">🎯</span>
+                    Blocked Redirect Target
+                </h2>
+                <div class="target-url-container">
+                    <div class="target-url" id="targetUrl">Loading...</div>
+                    <div class="url-warning">
+                        <span class="warning-badge">HTTP</span>
+                        <span class="warning-text-small">This URL uses insecure HTTP protocol</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Educational Section -->
+            <section class="info-card educational">
+                <h2 class="section-title">
+                    <span class="section-icon">📚</span>
+                    Why This Was Blocked
+                </h2>
+                <div class="educational-content">
+                    <div class="edu-item">
+                        <h3>🔓 What is SSL Stripping?</h3>
+                        <p>SSL stripping (also called HTTPS downgrade) is an attack where an attacker intercepts your connection and forces it to use HTTP instead of HTTPS, allowing them to see and modify your data.</p>
+                    </div>
+                    <div class="edu-item">
+                        <h3>🛡️ How We Protect You</h3>
+                        <p>Gone Phishin' monitors all redirects and blocks any attempt to downgrade from HTTPS to HTTP. This prevents attackers from intercepting your sensitive information.</p>
+                    </div>
+                    <div class="edu-item">
+                        <h3>⚠️ What You Should Do</h3>
+                        <ul>
+                            <li><strong>Do not proceed</strong> unless you're certain the site is legitimate</li>
+                            <li>Check if the site has an HTTPS version available</li>
+                            <li>Contact the website owner if this is unexpected</li>
+                            <li>Report suspicious behavior if you suspect an attack</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Action Buttons -->
+            <div class="actions">
+                <button class="btn btn-safe" id="goBack">
+                    <span class="btn-icon">←</span>
+                    <span>Go Back Safely</span>
+                </button>
+                <button class="btn btn-danger" id="proceed">
+                    <span class="btn-icon">⚠️</span>
+                    <span>Proceed Anyway (Not Recommended)</span>
+                </button>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer">
+                <p class="footer-note">
+                    <strong>Tip:</strong> Only proceed if you understand the risk. HTTP traffic can be intercepted, modified, or monitored by attackers.
+                </p>
+                <p class="footer-tagline">Protected by Gone Phishin' Security Extension</p>
+            </footer>
+        </main>
     </div>
 
-    <div class="actions">
-      <button id="goBack">Go back</button>
-      <button id="proceed" class="danger">Proceed (not recommended)</button>
-    </div>
-
-    <p class="fineprint">
-      Tip: Only proceed if you understand the risk. HTTP traffic can be intercepted or modified.
-    </p>
-  </div>
-  <script src="warning.js"></script>
+    <script src="warning.js"></script>
 </body>
 </html>

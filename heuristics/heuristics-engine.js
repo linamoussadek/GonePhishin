@@ -375,9 +375,74 @@ function isElementVisible(element) {
          parseFloat(style.opacity) > 0;
 }
 
-// Compile all results
+// Compile all results with detailed information
 function compileResults() {
   const severity = determineSeverity(anomalyScore);
+  
+  // Get detailed form information
+  const forms = Array.from(document.querySelectorAll('form')).map((form, idx) => {
+    const action = form.getAttribute('action') || '';
+    try {
+      const formUrl = new URL(action, location.origin);
+      const isExternal = formUrl.origin !== location.origin;
+      const hasPassword = form.querySelector('input[type="password"]') !== null;
+      const style = window.getComputedStyle(form);
+      const isHidden = style.display === 'none' || style.visibility === 'hidden';
+      
+      return {
+        index: idx,
+        action: action,
+        isExternal: isExternal,
+        targetDomain: isExternal ? formUrl.hostname : null,
+        hasPassword: hasPassword,
+        isHidden: isHidden,
+        inputCount: form.querySelectorAll('input').length,
+        method: form.getAttribute('method') || 'GET'
+      };
+    } catch (e) {
+      return {
+        index: idx,
+        action: action,
+        isExternal: false,
+        error: 'Invalid URL'
+      };
+    }
+  });
+  
+  // Get detailed link information
+  const linkDetails = externalLinks.map((link, idx) => ({
+    index: idx,
+    url: link.url,
+    domain: link.domain,
+    text: link.text,
+    isVisible: link.isVisible,
+    isSuspicious: isSuspiciousDomain(link.domain)
+  }));
+  
+  // Get iframe information
+  const iframes = Array.from(document.querySelectorAll('iframe')).map((iframe, idx) => {
+    const style = window.getComputedStyle(iframe);
+    const isHidden = style.display === 'none' || 
+                     style.visibility === 'hidden' ||
+                     parseFloat(style.opacity) === 0;
+    try {
+      if (iframe.src) {
+        const iframeUrl = new URL(iframe.src, location.origin);
+        return {
+          index: idx,
+          src: iframe.src,
+          isExternal: iframeUrl.origin !== location.origin,
+          targetDomain: iframeUrl.origin !== location.origin ? iframeUrl.hostname : null,
+          isHidden: isHidden
+        };
+      }
+    } catch (e) {}
+    return {
+      index: idx,
+      src: iframe.src || 'none',
+      isHidden: isHidden
+    };
+  });
   
   return {
     anomalyScore,
@@ -386,7 +451,26 @@ function compileResults() {
     externalLinks: externalLinks.length,
     linkDomains: [...new Set(externalLinks.map(l => l.domain))],
     detectedIssues,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    // Detailed analysis data for academic purposes
+    detailedAnalysis: {
+      forms: forms,
+      links: linkDetails,
+      iframes: iframes,
+      externalPosts: externalPosts,
+      totalForms: forms.length,
+      totalLinks: document.querySelectorAll('a[href]').length,
+      totalIframes: iframes.length,
+      pageUrl: window.location.href,
+      pageTitle: document.title,
+      domainCounts: (() => {
+        const counts = {};
+        externalLinks.forEach(link => {
+          counts[link.domain] = (counts[link.domain] || 0) + 1;
+        });
+        return counts;
+      })()
+    }
   };
 }
 
