@@ -1,0 +1,22 @@
+# Backend Environment Variables Template
+# Copy this content to a .env file in your backend root directory
+
+SERVER_PORT=3000
+
+URLSCAN_API_KEY=01996cab-1376-7509-99d2-e98206e79161
+
+MONGODB_URI=mongodb+srv://gonephishing62_db_user:viQl5k2khA18VMDI@gone-phishing-cluster.ksnp9za.mongodb.net/
+
+DB_PORT=4000
+
+GOOGLE_CLIENT_ID=1092926819605-mem4v21klbl183rout78iq2gp4qn8bmh.apps.googleusercontent.com
+
+GOOGLE_CLIENT_SECRET=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
+
+# Update this with your ngrok URL after setting up ngrok tunnel
+GOOGLE_REDIRECT_URL=https://YOUR_NGROK_URL.ngrok-free.dev/api/auth/google/callback
+
+GOOGLE_LOCAL_REDIRECT_URL=http://localhost:3000/api/auth/google/callback
+
+JWT_SECRET=4332ad44b045bf2cc4d2b4336b9f4a87d0fd4a2d
+

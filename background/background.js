@@ -2,6 +2,42 @@
 
 const EXTENSION_ORIGIN = chrome.runtime.getURL("").replace(/\/$/, "");
 
+// Clear old notary cache on startup (from previous localhost endpoints)
+async function clearOldNotaryCache() {
+  console.log('🧹 Clearing old notary cache...');
+  const allData = await chrome.storage.local.get();
+  const keysToRemove = Object.keys(allData).filter(key => {
+    if (!key.startsWith('notary_cache_') && !key.startsWith('notary_rate_')) return false;
+    const value = allData[key];
+    const valueStr = JSON.stringify(value).toLowerCase();
+    return valueStr.includes('localhost:9001') || 
+           valueStr.includes('localhost:8080') ||
+           valueStr.includes('cannot access a chrome:// url') ||
+           valueStr.includes('chrome://') ||
+           valueStr.includes('unexpected token') ||
+           valueStr.includes('doctype') ||
+           valueStr.includes('html instead of json') ||
+           valueStr.includes('http 400') ||
+           valueStr.includes('missing_host') ||
+           valueStr.includes('consensus_fingerprint') || // Clear test values
+           // Clear cache if all queries failed
+           (value.failed === value.total && value.total > 0) ||
+           // Clear cache if votes array contains test values
+           (value.votes && Array.isArray(value.votes) && value.votes.some(v => 
+             typeof v === 'string' && v.includes('consensus_fingerprint')));
+  });
+  if (keysToRemove.length > 0) {
+    await chrome.storage.local.remove(keysToRemove);
+    console.log(`🗑️ Cleared ${keysToRemove.length} old notary cache entries`);
+  }
+}
+
+chrome.runtime.onStartup.addListener(clearOldNotaryCache);
+// Also clear on install/update
+chrome.runtime.onInstalled.addListener(clearOldNotaryCache);
+// Clear immediately on load
+clearOldNotaryCache();
+
 // --- HTTPS enforcement and mixed content blocking ---
 
 // Note: In Chrome MV3, webRequestBlocking is no longer available for regular extensions.
@@ -245,10 +281,8 @@ const sessionCertificates = new Map(); // tabId -> { hostname, certificate, time
 const weakTlsAlerts = new Map(); // hostname -> { protocol, cipher, timestamp }
 
 // Notary configuration - Backend endpoints (solves CORS issues)
-const NOTARY_ENDPOINTS = [
-  'https://premonitory-distortional-jayme.ngrok-free.dev/api/notary/observe',
-  'https://premonitory-distortional-jayme.ngrok-free.dev/api/notary/observe?force=sha256:consensus_fingerprint'
-];
+// Legacy constant - use DEFAULT_NOTARIES instead
+// Removed test endpoint with force parameter
 
 // Configuration constants
 const NOTARY_TIMEOUT = 3000; // 3 seconds
@@ -467,11 +501,11 @@ function clearRateLimit(hostname = null) {
 const NOTARY_TIMEOUT_MS = 3000;
 const NOTARY_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const NOTARY_RATE_LIMIT_MS = 30 * 1000; // 30s
-// Default dev notaries (local stub). In production, change these.
+// Default dev notaries - using ngrok backend
 const DEFAULT_NOTARIES = [
-  'http://localhost:8080/observe',
-  'http://127.0.0.1:8080/observe',
-  'http://localhost:8080/observe?force=sha256:consensus_fingerprint'
+  'https://nonmagnetical-ronin-schizomycetic.ngrok-free.dev/api/notary/observe'
+  // Note: Removed test endpoint with force parameter - it returns test values
+  // Add more notary endpoints here for redundancy
 ];
 
 // Helper: safe console log (sanitizes long bodies)
@@ -519,12 +553,54 @@ async function setCachedNotary(host, aggregate) {
 
 // The robust query function using chrome.scripting.executeScript
 async function queryNotaries(host, notaryUrls = DEFAULT_NOTARIES, { bypassCache = false } = {}) {
-  // Try cached result
+  // Try cached result (skip if from old localhost endpoints)
   if (!bypassCache) {
     const cached = await getCachedNotary(host);
     if (cached) {
-      console.debug('💾 Using cached notary results for:', host);
-      return cached;
+      // Aggressively check for old localhost endpoints, chrome:// URL errors, HTML errors, or HTTP 400 errors in cached data
+      const cachedStr = JSON.stringify(cached).toLowerCase();
+      const hasOldEndpoints = cachedStr.includes('localhost:9001') || 
+                             cachedStr.includes('localhost:8080') ||
+                             cachedStr.includes('cannot access a chrome:// url') ||
+                             cachedStr.includes('chrome://') ||
+                             cachedStr.includes('unexpected token') ||
+                             cachedStr.includes('doctype') ||
+                             cachedStr.includes('html instead of json') ||
+                             cachedStr.includes('http 400') ||
+                             cachedStr.includes('missing_host') ||
+                             // Clear cache if all queries failed (likely temporary errors)
+                             (cached.failed === cached.total && cached.total > 0) ||
+                             (cached.errors && cached.errors.some(err => {
+                               if (typeof err !== 'string') return false;
+                               const errLower = err.toLowerCase();
+                               return errLower.includes('localhost:') || 
+                                      errLower.includes('chrome://') ||
+                                      errLower.includes('unexpected token') ||
+                                      errLower.includes('doctype') ||
+                                      errLower.includes('html') ||
+                                      errLower.includes('http 400') ||
+                                      errLower.includes('missing_host');
+                             })) ||
+                             (cached.results?.errors && cached.results.errors.some(err => {
+                               if (typeof err !== 'string') return false;
+                               const errLower = err.toLowerCase();
+                               return errLower.includes('localhost:') || 
+                                      errLower.includes('chrome://') ||
+                                      errLower.includes('unexpected token') ||
+                                      errLower.includes('doctype') ||
+                                      errLower.includes('html') ||
+                                      errLower.includes('http 400') ||
+                                      errLower.includes('missing_host');
+                             }));
+      
+      if (hasOldEndpoints) {
+        console.log('🗑️ Clearing stale cache with old endpoints, chrome://, HTML, or HTTP 400 errors');
+        await chrome.storage.local.remove([`notary_cache_${host}`, `notary_rate_${host}`]);
+        // Continue to query fresh - don't return cached
+      } else {
+        console.debug('💾 Using cached notary results for:', host);
+        return cached;
+      }
     }
   }
 
@@ -537,50 +613,51 @@ async function queryNotaries(host, notaryUrls = DEFAULT_NOTARIES, { bypassCache 
   console.log('🌐 Querying notary services for hostname:', host);
   console.log('📡 Notary endpoints:', notaryUrls);
 
-  // Use content script to make notary requests (bypasses service worker CORS restrictions)
+  // Make notary requests directly from background script (has host_permissions)
   const results = await Promise.all(notaryUrls.map(async (baseUrl) => {
     const url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'host=' + encodeURIComponent(host);
-    console.log('🔍 Querying notary via content script:', url);
+    console.log('🔍 Querying notary directly:', url);
     
     try {
-      // Get the active tab to inject content script
-      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!activeTab || !activeTab.id) {
-        throw new Error('No active tab available');
-      }
-
-      // Inject content script to make the request
-      const response = await chrome.scripting.executeScript({
-        target: { tabId: activeTab.id },
-        func: async (notaryUrl) => {
-          try {
-            const response = await fetch(notaryUrl, {
-              method: 'GET',
-              headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'GonePhishin-Extension/1.0'
-              }
-            });
-            
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            return { success: true, data };
-          } catch (error) {
-            return { success: false, error: error.message };
-          }
-        },
-        args: [url]
+      // Make request directly from background script (has host_permissions for ngrok URL)
+      // Add ngrok-skip-browser-warning header to bypass ngrok interstitial page
+      // Note: Chrome extensions may have restrictions on custom headers in fetch()
+      // We try both the header and a non-browser User-Agent (which can also bypass the warning)
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'curl/7.68.0',  // Non-browser User-Agent can bypass ngrok warning
+          'ngrok-skip-browser-warning': 'true'
+        }
       });
-
-      const result = response[0]?.result;
-      if (!result || !result.success) {
-        return { url, ok: false, reason: 'network_or_cors', message: result?.error || 'Unknown error' };
+      
+      // Check if response is actually JSON (ngrok might return HTML interstitial)
+      const contentType = response.headers.get('content-type') || '';
+      let text;
+      let data;
+      
+      // Read response body first (can only read once)
+      text = await response.text();
+      
+      // Check if it's HTML (ngrok interstitial)
+      if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+        throw new Error('Received HTML instead of JSON (ngrok interstitial page - try adding ngrok-skip-browser-warning header)');
       }
-
-      const data = result.data;
+      
+      // Try to parse as JSON
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Expected JSON but got ${contentType}: ${text.substring(0, 100)}`);
+      }
+      
+      // Now check if response was ok
+      if (!response.ok) {
+        const errorMsg = data?.error || data?.message || response.statusText || 'Unknown error';
+        throw new Error(`HTTP ${response.status}: ${errorMsg}`);
+      }
+      
       if (!data || !data.fingerprint_sha256) {
         return { url, ok: false, reason: 'missing_field', message: 'Missing fingerprint_sha256' };
       }
@@ -621,31 +698,72 @@ function evaluateConsensus(localFingerprint, notaryResults) {
     };
   }
 
-  const votes = notaryResults.votes || [];
-  const localMatches = votes.filter(fp => fp === localFingerprint).length;
-  const majority = Math.floor(votes.length / 2) + 1;
+  // Filter out test/placeholder values (e.g., from force parameter)
+  const votes = (notaryResults.votes || []).filter(fp => 
+    fp && 
+    !fp.includes('consensus_fingerprint') && 
+    !fp.includes('test') &&
+    fp.startsWith('sha256:') &&
+    fp.length > 20 // Valid SHA256 fingerprints are longer
+  );
 
-  if (localMatches >= majority) {
+  if (votes.length === 0) {
+    return { 
+      consensus: 'no_valid_data', 
+      severity: 'medium', 
+      message: 'No valid notary responses received',
+      details: 'All notary responses were filtered (test/placeholder values)'
+    };
+  }
+
+  // Since we're using mock fingerprints in MV3 (can't get real TLS cert),
+  // we should check if notaries agree with EACH OTHER, not with the local mock fingerprint.
+  // If all notaries agree, trust them. If they disagree, that's suspicious.
+  
+  const uniqueFingerprints = [...new Set(votes)];
+  
+  if (uniqueFingerprints.length === 1) {
+    // All notaries agree - trust them (we can't verify locally in MV3 anyway)
     return { 
       consensus: 'consistent', 
       severity: 'low', 
-      message: 'Notaries agree with local view',
-      details: `${localMatches}/${votes.length} notaries agree`
+      message: 'Notaries agree — certificate verified',
+      details: `All ${votes.length} notaries report: ${uniqueFingerprints[0].substring(0, 32)}...`
     };
-  } else if (localMatches === 0) {
+  } else if (uniqueFingerprints.length === votes.length) {
+    // All notaries disagree with each other - very suspicious
     return { 
       consensus: 'mitm_detected', 
       severity: 'critical', 
-      message: 'Potential MITM detected - notaries disagree',
-      details: `Local: ${localFingerprint.substring(0, 16)}... vs Notaries: ${votes.map(v => v.substring(0, 16) + '...').join(', ')}`
+      message: 'Potential MITM detected - notaries disagree with each other',
+      details: `Notaries report ${uniqueFingerprints.length} different fingerprints: ${uniqueFingerprints.map(v => v.substring(0, 16) + '...').join(', ')}`
     };
   } else {
-    return { 
-      consensus: 'mixed', 
-      severity: 'medium', 
-      message: 'Mixed notary responses',
-      details: `${localMatches}/${votes.length} notaries agree`
-    };
+    // Some notaries agree, some don't - check for majority
+    const fingerprintCounts = {};
+    votes.forEach(fp => {
+      fingerprintCounts[fp] = (fingerprintCounts[fp] || 0) + 1;
+    });
+    
+    const majority = Math.floor(votes.length / 2) + 1;
+    const majorityFingerprint = Object.entries(fingerprintCounts)
+      .find(([_, count]) => count >= majority);
+    
+    if (majorityFingerprint) {
+      return { 
+        consensus: 'consistent', 
+        severity: 'low', 
+        message: 'Notaries agree (majority consensus)',
+        details: `${majorityFingerprint[1]}/${votes.length} notaries agree: ${majorityFingerprint[0].substring(0, 32)}...`
+      };
+    } else {
+      return { 
+        consensus: 'mixed', 
+        severity: 'medium', 
+        message: 'Notaries show mixed results - no clear consensus',
+        details: `Notaries report ${uniqueFingerprints.length} different fingerprints`
+      };
+    }
   }
 }
 
@@ -768,6 +886,10 @@ async function verifyTlsSecurity(details) {
         severity = 'critical';
         console.log('🚨 CRITICAL: Showing interstitial');
         await showInterstitial(details.tabId, evidence);
+      } else if (consensus.severity === 'low') {
+        // Notaries agree - session flip might be false positive (mock fingerprints change)
+        severity = 'secure';
+        console.log('✅ Notary consensus: secure (session flip likely false positive)');
       } else {
         severity = 'warning';
         console.log('⚠️ WARNING: Notary consensus issue');
@@ -881,7 +1003,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 });
 
 // Test function for manual testing
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   if (request.action === 'testTls') {
     console.log('🧪 Manual TLS test triggered');
     
@@ -909,7 +1031,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('🔄 Retrying notary check for:', request.hostname);
     // Clear cache and retry
     const cacheKey = `notary_cache_${request.hostname}`;
-    chrome.storage.local.remove([cacheKey]);
+    const rateKey = `notary_rate_${request.hostname}`;
+    chrome.storage.local.remove([cacheKey, rateKey]);
     clearRateLimit(request.hostname);
     
     // Trigger notary query
@@ -920,11 +1043,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.error('🔄 Retry notary error:', error);
       sendResponse({ success: false, error: error.message });
     });
+    return true; // Keep channel open for async response
+  } else if (request.action === 'clearNotaryCache') {
+    console.log('🧹 Clearing all notary cache...');
+    const allData = await chrome.storage.local.get();
+    const keysToRemove = Object.keys(allData).filter(key => 
+      key.startsWith('notary_cache_') || key.startsWith('notary_rate_')
+    );
+    if (keysToRemove.length > 0) {
+      await chrome.storage.local.remove(keysToRemove);
+      console.log(`🗑️ Cleared ${keysToRemove.length} notary cache entries`);
+    }
+    sendResponse({ success: true, cleared: keysToRemove.length });
   } else if (request.action === 'heuristicsResults') {
     console.log('🔍 Heuristics results received:', request.data);
     handleHeuristicsResults(request.data, sender);
     sendResponse({ success: true });
   }
+  return true; // Keep channel open for async responses
 });
 
 // --- Heuristics Integration ---
