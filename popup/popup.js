@@ -552,6 +552,14 @@ function setupEventListeners() {
         const url = chrome.runtime.getURL('popup/dashboard/dashboard.html');
         await chrome.tabs.create({ url });
     });
+
+    // login button
+    document.getElementById("login").addEventListener("click", async () => {
+        alert("login button clicked");
+        // this token shouldn't be here - to be removed
+        const token = 'bla';
+        chrome.runtime.sendMessage({ type: "GET_ACCOUNT_CREATION_DATE", token }); // replace action w/ LOGIN
+    });
     
     // View all activity
     document.getElementById('viewAllActivity').addEventListener('click', async () => {

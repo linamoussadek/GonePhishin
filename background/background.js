@@ -10,21 +10,21 @@ async function clearOldNotaryCache() {
     if (!key.startsWith('notary_cache_') && !key.startsWith('notary_rate_')) return false;
     const value = allData[key];
     const valueStr = JSON.stringify(value).toLowerCase();
-    return valueStr.includes('localhost:9001') || 
-           valueStr.includes('localhost:8080') ||
-           valueStr.includes('cannot access a chrome:// url') ||
-           valueStr.includes('chrome://') ||
-           valueStr.includes('unexpected token') ||
-           valueStr.includes('doctype') ||
-           valueStr.includes('html instead of json') ||
-           valueStr.includes('http 400') ||
-           valueStr.includes('missing_host') ||
-           valueStr.includes('consensus_fingerprint') || // Clear test values
-           // Clear cache if all queries failed
-           (value.failed === value.total && value.total > 0) ||
-           // Clear cache if votes array contains test values
-           (value.votes && Array.isArray(value.votes) && value.votes.some(v => 
-             typeof v === 'string' && v.includes('consensus_fingerprint')));
+    return valueStr.includes('localhost:9001') ||
+      valueStr.includes('localhost:8080') ||
+      valueStr.includes('cannot access a chrome:// url') ||
+      valueStr.includes('chrome://') ||
+      valueStr.includes('unexpected token') ||
+      valueStr.includes('doctype') ||
+      valueStr.includes('html instead of json') ||
+      valueStr.includes('http 400') ||
+      valueStr.includes('missing_host') ||
+      valueStr.includes('consensus_fingerprint') || // Clear test values
+      // Clear cache if all queries failed
+      (value.failed === value.total && value.total > 0) ||
+      // Clear cache if votes array contains test values
+      (value.votes && Array.isArray(value.votes) && value.votes.some(v =>
+        typeof v === 'string' && v.includes('consensus_fingerprint')));
   });
   if (keysToRemove.length > 0) {
     await chrome.storage.local.remove(keysToRemove);
@@ -56,25 +56,25 @@ chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((details) => {
   // Only track main_frame upgrades (actual page navigations)
   if (details.request.type === "main_frame" && details.rule.ruleId === 1) {
     const tabId = details.request.tabId;
-    
+
     // Increment counters
     totalUpgrades++;
     const count = (tabUpgradeCounts.get(tabId) || 0) + 1;
     tabUpgradeCounts.set(tabId, count);
-    
+
     // Update badge to show upgrade happened
     chrome.action.setBadgeText({ text: "🔒", tabId: tabId });
     chrome.action.setBadgeBackgroundColor({ color: "#4CAF50", tabId: tabId });
-    
+
     // Show a subtle notification
     const url = new URL(details.request.url);
-    chrome.action.setTitle({ 
+    chrome.action.setTitle({
       title: `✅ Upgraded to HTTPS: ${url.hostname}`,
-      tabId: tabId 
+      tabId: tabId
     });
-    
+
     // Store upgrade info for popup
-    chrome.storage.local.set({ 
+    chrome.storage.local.set({
       totalUpgrades: totalUpgrades,
       lastUpgrade: { url: details.request.url, timestamp: Date.now() }
     });
@@ -159,10 +159,10 @@ async function submitScanToBackend(url) {
       return { success: false, message: "We couldn’t verify this URL." };
     }
 
-    return { 
-      success: true, 
-      message: "Scan submitted successfully", 
-      data: {uuid: data.uuid} 
+    return {
+      success: true,
+      message: "Scan submitted successfully",
+      data: { uuid: data.uuid }
     };
 
   } catch (error) {
@@ -180,10 +180,10 @@ async function pollScanResult(uuid) {
 
     try {
       const resp = await fetch(`https://premonitory-distortional-jayme.ngrok-free.dev/api/urlscan/${uuid}`, {
-          method: "GET",
-          headers: new Headers({
-            "ngrok-skip-browser-warning": "69420",
-          })
+        method: "GET",
+        headers: new Headers({
+          "ngrok-skip-browser-warning": "69420",
+        })
       });
 
       // error in response
@@ -193,7 +193,7 @@ async function pollScanResult(uuid) {
       }
 
       //console.log("response: ", resp);
-     // const data = await resp.json();
+      // const data = await resp.json();
 
       let data;
       try {
@@ -214,7 +214,7 @@ async function pollScanResult(uuid) {
       }
 
       console.log("Scan complete:", data);
-      return {success: true, message: "Scan complete", data};
+      return { success: true, message: "Scan complete", data };
 
     } catch (err) {
       console.error(`Polling error (attempt ${attempts + 1}):`, err.message);
@@ -231,7 +231,7 @@ async function pollScanResult(uuid) {
 // successful scan returns {success: true, message: "Scan successful", data: {isMalicious: <boolean>} }
 async function urlScan(url) {
   const submission = await submitScanToBackend(url);
-  
+
   if (!submission.success) {
     console.warn("Problem submitting scan:", submission.message);
     return { success: false, message: submission.message };
@@ -247,14 +247,14 @@ async function urlScan(url) {
     console.warn(poll.message);
     return { success: false, message: poll.message };
   }
-  
+
   const result = poll.data;
   const hasVerdicts = result.verdicts?.overall?.hasVerdicts
   if (!hasVerdicts) {
     console.log("Unable to verify URL (no verdict)")
     return {  // either return an error or return null
-      success: false, 
-      message: "We couldn’t verify this URL." 
+      success: false,
+      message: "We couldn’t verify this URL."
     };
   }
 
@@ -265,13 +265,287 @@ async function urlScan(url) {
 // atm it's only working when you open a new tab or if you're on an existing tab and go to a new website
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   const url = changeInfo.url;
-  if (!url || ['chrome://', 'about://'].some(p => url.startsWith(p))) return;
+  if (!url || ['chrome://', 'about://', 'chrome-extension://'].some(p => url.startsWith(p))) return;
   if (!tab.active) return; // revisit
   console.log(url);
   await urlScan(url);
 });
 
-/* -------------------- end of urlscan code -------------------- */
+/* -------------------- end of urlscan code -------------------- *
+/* -------------------- start of user actions code -------------------- */
+
+// this function will generate the JWT
+async function login() { };
+
+// functions below require JWT
+async function getUserInfo() { 
+  try {
+    const token = "<replace with actual token>"; // to be retrieved from storage
+    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/info', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'ngrok-skip-browser-warning': '69420'
+      }
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("🧃Backend returned error:", res.status, text);
+      return { error: true, status: res.status, text };
+    }
+
+    const data = await res.json();
+    console.log("🧃In getUserWhitelist function - response: ", data);
+    return data
+
+  } catch (err) {
+    console.error("🧃Fetch failed:", err);
+    return { error: true, message: err.message };
+  }
+
+};
+
+async function addUrlToUserWhitelist(urlToAdd) { 
+  try {
+    console.log("🦴 in addUrlToUserWhitelist");
+    const token = "<replace with actual token>"; //to be retrieved from storage
+    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/whitelist/add', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'ngrok-skip-browser-warning': '69420',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        "url": urlToAdd,
+      })
+    });
+
+    console.log("🦴 in addUrlToUserWhitelist here is my res: ", res);
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("🦴 in addUrlToUserWhitelist returned error:", res.status, text);
+      return {error: true, status: res.status, text};
+    }
+
+    const data = await res.json();
+    console.log("🦴 in addUrlToUserWhitelist function - response: ", data);
+
+  } catch (err) {
+    console.log("🦴 in addUrlToUserWhitelist fetch failed:", err);
+    return {error: true, message: err.message};
+  }
+
+};
+
+async function removeUrlFromUserWhitelist(urlToDelete) {
+  try {
+    console.log("🍟 in RemoveUrlFromUserWhitelist", typeof(urlToDelete));
+    const token = "<replace with actual token>"; //to be retrieved from storage
+    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/whitelist/delete', {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'ngrok-skip-browser-warning': '69420',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        "url": urlToDelete,
+      })
+    });
+
+    console.log("🍟 in RemoveUrlFromUserWhitelist here is my res: ", res);
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("🍟 in RemoveUrlFromUserWhitelist returned error:", res.status, text);
+      //sendResponse({ error: true, status: res.status, text });
+      return { error: true, status: res.status, text };
+    }
+
+    const data = await res.json();
+    console.log("🍟 in RemoveUrlFromUserWhitelist function - response: ", data);
+
+  } catch (err) {
+    console.error("🍟  RemoveUrlFromUserWhitelist Fetch failed:", err);
+    return { error: true, message: err.message };
+  }
+};
+
+async function getUserWhitelist() {
+  try {
+    const token = "<replace with actual token>"; // to be retrieved from storage
+    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/whitelist', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'ngrok-skip-browser-warning': '69420'
+      }
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("🍊Backend returned error:", res.status, text);
+      return { error: true, status: res.status, text };
+    }
+
+    const data = await res.json();
+    console.log("🍊In getUserWhitelist function - response: ", data);
+    return data
+  } catch (err) {
+    console.error("🍊Fetch failed:", err);
+    return { error: true, message: err.message };
+  }
+
+};
+
+async function updateLastVisitedBlacklistedAt() { // backend will automatically update the date to today - need to fix timezone tho
+  try {
+    console.log("🥨 in updateLastVisitedBlacklistedAt");
+    const token = "<replace with actual token>"; //to be retrieved from storage
+    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/stats/update-visited-blacklist', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'ngrok-skip-browser-warning': '69420',
+      },
+    });
+
+    console.log("🥨 in updateLastVisitedBlacklistedAt here is my res: ", res);
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("🥨 in updateLastVisitedBlacklistedAt returned error:", res.status, text);
+      return {error: true, status: res.status, text};
+    }
+
+  } catch (err) {
+    console.log("🥨 in updateLastVisitedBlacklistedAt fetch failed:", err);
+    return {error: true, message: err.message};
+  }
+
+};
+
+async function getLastVisitedBlacklistedAt() { 
+  try {
+  const token = "<replace with actual token>"; // to be retrieved from storage
+    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/stats/last-visited-blacklist', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'ngrok-skip-browser-warning': '69420'
+      }
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("🍖 Backend returned error:", res.status, text);
+      return { error: true, status: res.status, text };
+    }
+
+    const data = await res.json();
+    console.log("🍖 In getLastVisitedBlacklistedAt function - response: ", data);
+    return data
+  } catch (err) {
+    console.error("🍖 getLastVisitedBlacklistedAt Fetch failed:", err);
+    return { error: true, message: err.message };
+  }
+
+};
+
+async function getAccountCreationDate() { 
+   try {
+  const token = "<replace with actual token>"; // to be retrieved from storage
+    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/stats/account-creation-date', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'ngrok-skip-browser-warning': '69420'
+      }
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("🍧 Backend returned error:", res.status, text);
+      return { error: true, status: res.status, text };
+    }
+
+    const data = await res.json();
+    console.log("🍧 In getAccountCreationDate function - response: ", data);
+    return data
+  } catch (err) {
+    console.error("🍧 getAccountCreationDate Fetch failed:", err);
+    return { error: true, message: err.message };
+  }
+
+};
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  (async () => {
+    try {
+      let data;
+      switch (msg.type) {
+        case "LOGIN":
+          token = msg.token;
+          sendResponse({ success: true });
+          break;
+
+        case "GET_USER_INFO":
+          // need token
+          data = await getUserInfo();
+          console.log("🧃In switch - user info received: ", data);
+          sendResponse({success: true, data});
+          break;
+
+        case "ADD_WHITELIST":
+          // need token
+          sendResponse(await addUrlToUserWhitelist('https://www.bla.ca')); // msg.url
+          break;
+
+        case "REMOVE_WHITELIST":
+          // need token
+          sendResponse(await removeUrlFromUserWhitelist('abcdefg.ca')); // msg.url
+          break;
+
+        case "GET_WHITELIST":
+          // need token
+          data = await getUserWhitelist();
+          console.log("🍊In switch - data received: ", data);
+          sendResponse({ success: true, data });
+          break;
+
+        case "UPDATE_LAST_VISITED_BLACKLIST":
+          // need token
+          sendResponse(await updateLastVisitedBlacklistedAt());
+          break;
+
+        case "GET_LAST_VISITED_BLACKLIST":
+          data = await getLastVisitedBlacklistedAt(); // would need to pass token
+          console.log("🍖 In switch - data received: ", data);
+          sendResponse({success: true, data});
+          break;
+
+        case "GET_ACCOUNT_CREATION_DATE":
+          data = await getAccountCreationDate(); // would need to pass token
+          console.log("🍧 In switch - data received: ", data);
+          sendResponse({success: true, data});
+          break;
+
+        default:
+          sendResponse({ error: "Unknown request type" });
+      }
+    } catch (err) {
+      console.error("Background error:", err);
+      sendResponse({ error: true, message: err.message });
+    }
+  })();
+  return true; // keep channel open
+});
+
+
+/* -------------------- end of user actions code -------------------- */
 
 // --- TLS & Certificate Verification + Multi-Vantage Notary Checks ---
 
@@ -333,9 +607,9 @@ function checkLetsEncryptCertificate(issuer, hostname) {
     /medical|healthcare|insurance/i,
     /government|gov|state/i
   ];
-  
+
   const isSensitive = sensitivePatterns.some(pattern => pattern.test(hostname));
-  
+
   if (isSensitive) {
     console.warn(`⚠️ Let's Encrypt certificate on sensitive site: ${hostname}`);
     return {
@@ -345,7 +619,7 @@ function checkLetsEncryptCertificate(issuer, hostname) {
       recommendation: 'Consider using Extended Validation (EV) certificate'
     };
   }
-  
+
   return { score: 0, severity: 'secure' };
 }
 
@@ -371,7 +645,7 @@ function detectIssuerDrift(hostname, newCertificate) {
       current: newCertificate.issuer,
       timestamp: new Date().toISOString()
     });
-    
+
     // Store the drift event
     chrome.storage.local.set({
       [`issuerDrift_${hostname}_${Date.now()}`]: {
@@ -381,7 +655,7 @@ function detectIssuerDrift(hostname, newCertificate) {
         timestamp: Date.now()
       }
     });
-    
+
     return true;
   }
 
@@ -413,10 +687,10 @@ async function checkSessionConsistency(tabId, hostname, newFingerprint) {
     console.log(`🧪 SIMULATION MODE: skipping session checks for origin ${hostname}`);
     return false;
   }
-  
+
   const sessionKey = `${tabId}_${hostname}`;
   const stored = sessionCertificates.get(sessionKey);
-  
+
   if (!stored) {
     // First navigation in this session
     sessionCertificates.set(sessionKey, {
@@ -434,7 +708,7 @@ async function checkSessionConsistency(tabId, hostname, newFingerprint) {
       current: newFingerprint,
       timestamp: new Date().toISOString()
     });
-    
+
     return true;
   }
 
@@ -444,7 +718,7 @@ async function checkSessionConsistency(tabId, hostname, newFingerprint) {
 // Weak TLS detection
 function detectWeakTls(securityInfo) {
   const issues = [];
-  
+
   // Check TLS version
   if (securityInfo.protocolVersion && securityInfo.protocolVersion < 'TLSv1.2') {
     issues.push({
@@ -457,7 +731,7 @@ function detectWeakTls(securityInfo) {
 
   // Check cipher suite
   if (securityInfo.cipherSuite) {
-    const weakCiphers = TLS_POLICIES.forbiddenCiphers.filter(cipher => 
+    const weakCiphers = TLS_POLICIES.forbiddenCiphers.filter(cipher =>
       securityInfo.cipherSuite.includes(cipher)
     );
     if (weakCiphers.length > 0) {
@@ -559,40 +833,40 @@ async function queryNotaries(host, notaryUrls = DEFAULT_NOTARIES, { bypassCache 
     if (cached) {
       // Aggressively check for old localhost endpoints, chrome:// URL errors, HTML errors, or HTTP 400 errors in cached data
       const cachedStr = JSON.stringify(cached).toLowerCase();
-      const hasOldEndpoints = cachedStr.includes('localhost:9001') || 
-                             cachedStr.includes('localhost:8080') ||
-                             cachedStr.includes('cannot access a chrome:// url') ||
-                             cachedStr.includes('chrome://') ||
-                             cachedStr.includes('unexpected token') ||
-                             cachedStr.includes('doctype') ||
-                             cachedStr.includes('html instead of json') ||
-                             cachedStr.includes('http 400') ||
-                             cachedStr.includes('missing_host') ||
-                             // Clear cache if all queries failed (likely temporary errors)
-                             (cached.failed === cached.total && cached.total > 0) ||
-                             (cached.errors && cached.errors.some(err => {
-                               if (typeof err !== 'string') return false;
-                               const errLower = err.toLowerCase();
-                               return errLower.includes('localhost:') || 
-                                      errLower.includes('chrome://') ||
-                                      errLower.includes('unexpected token') ||
-                                      errLower.includes('doctype') ||
-                                      errLower.includes('html') ||
-                                      errLower.includes('http 400') ||
-                                      errLower.includes('missing_host');
-                             })) ||
-                             (cached.results?.errors && cached.results.errors.some(err => {
-                               if (typeof err !== 'string') return false;
-                               const errLower = err.toLowerCase();
-                               return errLower.includes('localhost:') || 
-                                      errLower.includes('chrome://') ||
-                                      errLower.includes('unexpected token') ||
-                                      errLower.includes('doctype') ||
-                                      errLower.includes('html') ||
-                                      errLower.includes('http 400') ||
-                                      errLower.includes('missing_host');
-                             }));
-      
+      const hasOldEndpoints = cachedStr.includes('localhost:9001') ||
+        cachedStr.includes('localhost:8080') ||
+        cachedStr.includes('cannot access a chrome:// url') ||
+        cachedStr.includes('chrome://') ||
+        cachedStr.includes('unexpected token') ||
+        cachedStr.includes('doctype') ||
+        cachedStr.includes('html instead of json') ||
+        cachedStr.includes('http 400') ||
+        cachedStr.includes('missing_host') ||
+        // Clear cache if all queries failed (likely temporary errors)
+        (cached.failed === cached.total && cached.total > 0) ||
+        (cached.errors && cached.errors.some(err => {
+          if (typeof err !== 'string') return false;
+          const errLower = err.toLowerCase();
+          return errLower.includes('localhost:') ||
+            errLower.includes('chrome://') ||
+            errLower.includes('unexpected token') ||
+            errLower.includes('doctype') ||
+            errLower.includes('html') ||
+            errLower.includes('http 400') ||
+            errLower.includes('missing_host');
+        })) ||
+        (cached.results?.errors && cached.results.errors.some(err => {
+          if (typeof err !== 'string') return false;
+          const errLower = err.toLowerCase();
+          return errLower.includes('localhost:') ||
+            errLower.includes('chrome://') ||
+            errLower.includes('unexpected token') ||
+            errLower.includes('doctype') ||
+            errLower.includes('html') ||
+            errLower.includes('http 400') ||
+            errLower.includes('missing_host');
+        }));
+
       if (hasOldEndpoints) {
         console.log('🗑️ Clearing stale cache with old endpoints, chrome://, HTML, or HTTP 400 errors');
         await chrome.storage.local.remove([`notary_cache_${host}`, `notary_rate_${host}`]);
@@ -617,7 +891,7 @@ async function queryNotaries(host, notaryUrls = DEFAULT_NOTARIES, { bypassCache 
   const results = await Promise.all(notaryUrls.map(async (baseUrl) => {
     const url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'host=' + encodeURIComponent(host);
     console.log('🔍 Querying notary directly:', url);
-    
+
     try {
       // Make request directly from background script (has host_permissions for ngrok URL)
       // Add ngrok-skip-browser-warning header to bypass ngrok interstitial page
@@ -631,33 +905,33 @@ async function queryNotaries(host, notaryUrls = DEFAULT_NOTARIES, { bypassCache 
           'ngrok-skip-browser-warning': 'true'
         }
       });
-      
+
       // Check if response is actually JSON (ngrok might return HTML interstitial)
       const contentType = response.headers.get('content-type') || '';
       let text;
       let data;
-      
+
       // Read response body first (can only read once)
       text = await response.text();
-      
+
       // Check if it's HTML (ngrok interstitial)
       if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
         throw new Error('Received HTML instead of JSON (ngrok interstitial page - try adding ngrok-skip-browser-warning header)');
       }
-      
+
       // Try to parse as JSON
       try {
         data = JSON.parse(text);
       } catch (e) {
         throw new Error(`Expected JSON but got ${contentType}: ${text.substring(0, 100)}`);
       }
-      
+
       // Now check if response was ok
       if (!response.ok) {
         const errorMsg = data?.error || data?.message || response.statusText || 'Unknown error';
         throw new Error(`HTTP ${response.status}: ${errorMsg}`);
       }
-      
+
       if (!data || !data.fingerprint_sha256) {
         return { url, ok: false, reason: 'missing_field', message: 'Missing fingerprint_sha256' };
       }
@@ -690,27 +964,27 @@ async function queryNotaries(host, notaryUrls = DEFAULT_NOTARIES, { bypassCache 
 // Consensus evaluation with structured results
 function evaluateConsensus(localFingerprint, notaryResults) {
   if (!notaryResults || notaryResults.successful === 0) {
-    return { 
-      consensus: 'no_data', 
-      severity: 'medium', 
+    return {
+      consensus: 'no_data',
+      severity: 'medium',
       message: 'Notary servers unreachable — unable to corroborate certificate',
       details: notaryResults?.errors || ['No notary responses']
     };
   }
 
   // Filter out test/placeholder values (e.g., from force parameter)
-  const votes = (notaryResults.votes || []).filter(fp => 
-    fp && 
-    !fp.includes('consensus_fingerprint') && 
+  const votes = (notaryResults.votes || []).filter(fp =>
+    fp &&
+    !fp.includes('consensus_fingerprint') &&
     !fp.includes('test') &&
     fp.startsWith('sha256:') &&
     fp.length > 20 // Valid SHA256 fingerprints are longer
   );
 
   if (votes.length === 0) {
-    return { 
-      consensus: 'no_valid_data', 
-      severity: 'medium', 
+    return {
+      consensus: 'no_valid_data',
+      severity: 'medium',
       message: 'No valid notary responses received',
       details: 'All notary responses were filtered (test/placeholder values)'
     };
@@ -719,22 +993,22 @@ function evaluateConsensus(localFingerprint, notaryResults) {
   // Since we're using mock fingerprints in MV3 (can't get real TLS cert),
   // we should check if notaries agree with EACH OTHER, not with the local mock fingerprint.
   // If all notaries agree, trust them. If they disagree, that's suspicious.
-  
+
   const uniqueFingerprints = [...new Set(votes)];
-  
+
   if (uniqueFingerprints.length === 1) {
     // All notaries agree - trust them (we can't verify locally in MV3 anyway)
-    return { 
-      consensus: 'consistent', 
-      severity: 'low', 
+    return {
+      consensus: 'consistent',
+      severity: 'low',
       message: 'Notaries agree — certificate verified',
       details: `All ${votes.length} notaries report: ${uniqueFingerprints[0].substring(0, 32)}...`
     };
   } else if (uniqueFingerprints.length === votes.length) {
     // All notaries disagree with each other - very suspicious
-    return { 
-      consensus: 'mitm_detected', 
-      severity: 'critical', 
+    return {
+      consensus: 'mitm_detected',
+      severity: 'critical',
       message: 'Potential MITM detected - notaries disagree with each other',
       details: `Notaries report ${uniqueFingerprints.length} different fingerprints: ${uniqueFingerprints.map(v => v.substring(0, 16) + '...').join(', ')}`
     };
@@ -744,22 +1018,22 @@ function evaluateConsensus(localFingerprint, notaryResults) {
     votes.forEach(fp => {
       fingerprintCounts[fp] = (fingerprintCounts[fp] || 0) + 1;
     });
-    
+
     const majority = Math.floor(votes.length / 2) + 1;
     const majorityFingerprint = Object.entries(fingerprintCounts)
       .find(([_, count]) => count >= majority);
-    
+
     if (majorityFingerprint) {
-      return { 
-        consensus: 'consistent', 
-        severity: 'low', 
+      return {
+        consensus: 'consistent',
+        severity: 'low',
         message: 'Notaries agree (majority consensus)',
         details: `${majorityFingerprint[1]}/${votes.length} notaries agree: ${majorityFingerprint[0].substring(0, 32)}...`
       };
     } else {
-      return { 
-        consensus: 'mixed', 
-        severity: 'medium', 
+      return {
+        consensus: 'mixed',
+        severity: 'medium',
         message: 'Notaries show mixed results - no clear consensus',
         details: `Notaries report ${uniqueFingerprints.length} different fingerprints`
       };
@@ -769,9 +1043,9 @@ function evaluateConsensus(localFingerprint, notaryResults) {
 
 // Show interstitial page
 async function showInterstitial(tabId, evidence) {
-  const interstitialUrl = chrome.runtime.getURL('interstitial.html') + 
+  const interstitialUrl = chrome.runtime.getURL('interstitial.html') +
     '?evidence=' + encodeURIComponent(JSON.stringify(evidence));
-  
+
   await chrome.tabs.update(tabId, { url: interstitialUrl });
 }
 
@@ -805,18 +1079,18 @@ async function verifyTlsSecurity(details) {
   try {
     const hostname = new URL(details.url).hostname;
     console.log('🌐 Processing TLS verification for:', hostname);
-    
+
     // Since getSecurityInfo is not available in MV3 service workers,
     // we'll simulate the TLS verification process for testing
     console.log('🔐 Simulating TLS verification (MV3 limitation)');
-    
+
     // Generate a mock fingerprint for testing
     const mockFingerprint = `sha256:${crypto.getRandomValues(new Uint8Array(32))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')}`;
-    
+
     console.log('🔑 Generated mock fingerprint:', mockFingerprint);
-    
+
     // Mock certificate info
     const mockCertInfo = {
       subject: `CN=${hostname}`,
@@ -824,13 +1098,13 @@ async function verifyTlsSecurity(details) {
       validFrom: new Date().toISOString(),
       validTo: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
     };
-    
+
     console.log('📜 Mock certificate info:', mockCertInfo);
-    
+
     // Check session consistency
     const sessionFlip = await checkSessionConsistency(details.tabId, hostname, mockFingerprint);
     console.log('🔄 Session consistency check:', { sessionFlip });
-    
+
     // Check issuer drift
     const issuerDrift = detectIssuerDrift(hostname, {
       issuer: mockCertInfo.issuer,
@@ -847,7 +1121,7 @@ async function verifyTlsSecurity(details) {
     // Check for weak TLS
     const weakTlsIssues = detectWeakTls(mockTlsInfo);
     console.log('⚠️ Weak TLS issues:', weakTlsIssues);
-    
+
     // Check Let's Encrypt certificate
     const letsEncryptCheck = checkLetsEncryptCertificate(mockCertInfo.issuer, hostname);
     if (letsEncryptCheck.score > 0) {
@@ -864,7 +1138,7 @@ async function verifyTlsSecurity(details) {
       cipher: mockTlsInfo.cipherSuite,
       timestamp: Date.now()
     };
-    
+
     // Add Let's Encrypt warning if applicable
     if (letsEncryptCheck.score > 0) {
       evidence.letsEncryptWarning = letsEncryptCheck;
@@ -875,10 +1149,10 @@ async function verifyTlsSecurity(details) {
       // Query notaries for consensus
       const notaryResults = await queryNotaries(hostname);
       const consensus = evaluateConsensus(mockFingerprint, notaryResults);
-      
+
       console.log('🌐 Notary results:', notaryResults);
       console.log('🤝 Consensus evaluation:', consensus);
-      
+
       evidence.notaryResults = notaryResults;
       evidence.consensus = consensus;
 
@@ -901,18 +1175,18 @@ async function verifyTlsSecurity(details) {
       console.log('⚠️ Weak TLS detected:', severity);
     } else {
       console.log('✅ Secure connection detected');
-      
+
       // Always query notaries for consensus verification
       console.log('🌐 Querying notaries for consensus verification');
       const notaryResults = await queryNotaries(hostname);
       const consensus = evaluateConsensus(mockFingerprint, notaryResults);
-      
+
       console.log('🌐 Notary results:', notaryResults);
       console.log('🤝 Consensus evaluation:', consensus);
-      
+
       evidence.notaryResults = notaryResults;
       evidence.consensus = consensus;
-      
+
       // Update severity based on notary consensus
       if (consensus.severity === 'critical') {
         severity = 'critical';
@@ -937,7 +1211,7 @@ async function verifyTlsSecurity(details) {
       severity,
       tabId: details.tabId
     };
-    
+
     console.log('📝 Storing audit log:', auditKey, auditData);
     chrome.storage.local.set({
       [auditKey]: auditData
@@ -977,7 +1251,7 @@ chrome.webNavigation.onCompleted.addListener((details) => {
     tabId: details.tabId,
     frameId: details.frameId
   });
-  
+
   if (details.frameId === 0 && details.url.startsWith('https://')) {
     console.log('🌐 Main frame HTTPS navigation detected, triggering TLS check');
     // Trigger a manual TLS check for this navigation
@@ -1006,7 +1280,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   if (request.action === 'testTls') {
     console.log('🧪 Manual TLS test triggered');
-    
+
     // Get the current active tab instead of using sender.tab
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const activeTab = tabs[0];
@@ -1021,7 +1295,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         console.log('❌ No active tab found for TLS test');
       }
     });
-    
+
     sendResponse({ success: true });
   } else if (request.action === 'clearRateLimit') {
     console.log('🧹 Clearing rate limits for testing');
@@ -1034,7 +1308,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     const rateKey = `notary_rate_${request.hostname}`;
     chrome.storage.local.remove([cacheKey, rateKey]);
     clearRateLimit(request.hostname);
-    
+
     // Trigger notary query
     queryNotaries(request.hostname, DEFAULT_NOTARIES, { bypassCache: true }).then((results) => {
       console.log('🔄 Retry notary results:', results);
@@ -1047,7 +1321,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   } else if (request.action === 'clearNotaryCache') {
     console.log('🧹 Clearing all notary cache...');
     const allData = await chrome.storage.local.get();
-    const keysToRemove = Object.keys(allData).filter(key => 
+    const keysToRemove = Object.keys(allData).filter(key =>
       key.startsWith('notary_cache_') || key.startsWith('notary_rate_')
     );
     if (keysToRemove.length > 0) {
@@ -1072,18 +1346,18 @@ function handleHeuristicsResults(results, sender) {
     console.log('No tab ID for heuristics results');
     return;
   }
-  
+
   console.log('🔍 Processing heuristics:', {
     score: results.anomalyScore,
     severity: results.severity,
     externalPosts: results.externalPosts,
     externalLinks: results.externalLinks
   });
-  
+
   // Store heuristics results
   const hostname = new URL(sender.tab.url).hostname;
   const storageKey = `heuristics_${hostname}_${Date.now()}`;
-  
+
   chrome.storage.local.set({
     [storageKey]: {
       ...results,
@@ -1092,10 +1366,10 @@ function handleHeuristicsResults(results, sender) {
       timestamp: Date.now()
     }
   });
-  
+
   // Update badge based on heuristics severity
   updateBadgeFromHeuristics(tabId, results);
-  
+
   // If critical, show warning
   if (results.severity === 'critical') {
     console.log('🚨 CRITICAL heuristics detected!');
@@ -1111,7 +1385,7 @@ function updateBadgeFromHeuristics(tabId, results) {
     'warning': { text: '⚠', color: '#FF9800' },
     'secure': { text: '', color: '#4CAF50' }
   };
-  
+
   const config = badgeMap[results.severity] || badgeMap['secure'];
   chrome.action.setBadgeText({ text: config.text, tabId });
   chrome.action.setBadgeBackgroundColor({ color: config.color, tabId });
@@ -1119,8 +1393,8 @@ function updateBadgeFromHeuristics(tabId, results) {
 
 // Show heuristics warning (similar to interstitial)
 function showHeuristicsWarning(tabId, results) {
-  const warningUrl = chrome.runtime.getURL('warning.html') + 
+  const warningUrl = chrome.runtime.getURL('warning.html') +
     '?reason=heuristics&data=' + encodeURIComponent(JSON.stringify(results));
-  
+
   chrome.tabs.update(tabId, { url: warningUrl });
 }
