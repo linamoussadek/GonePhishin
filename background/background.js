@@ -129,7 +129,7 @@ chrome.webNavigation.onCommitted.addListener((details) => {
 
 async function submitScanToBackend(url) {
   try {
-    const resp = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/urlscan', {
+    const resp = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/urlscan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
@@ -179,7 +179,7 @@ async function pollScanResult(uuid) {
   while (attempts < maxAttempts) {
 
     try {
-      const resp = await fetch(`https://premonitory-distortional-jayme.ngrok-free.dev/api/urlscan/${uuid}`, {
+      const resp = await fetch(`https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/urlscan/${uuid}`, {
         method: "GET",
         headers: new Headers({
           "ngrok-skip-browser-warning": "69420",
@@ -295,8 +295,8 @@ async function login() { };
 // functions below require JWT
 async function getUserInfo() { 
   try {
-    const token = "<replace with actual token>"; // to be retrieved from storage
-    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/info', {
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; // to be retrieved from storage
+    const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/info', {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -324,8 +324,8 @@ async function getUserInfo() {
 async function addUrlToUserWhitelist(urlToAdd) { 
   try {
     console.log("🦴 in addUrlToUserWhitelist");
-    const token = "<replace with actual token>"; //to be retrieved from storage
-    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/whitelist/add', {
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; //to be retrieved from storage
+    const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/whitelist/add', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -358,8 +358,8 @@ async function addUrlToUserWhitelist(urlToAdd) {
 async function removeUrlFromUserWhitelist(urlToDelete) {
   try {
     console.log("🍟 in RemoveUrlFromUserWhitelist", typeof(urlToDelete));
-    const token = "<replace with actual token>"; //to be retrieved from storage
-    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/whitelist/delete', {
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; //to be retrieved from storage
+    const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/whitelist/delete', {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -391,8 +391,8 @@ async function removeUrlFromUserWhitelist(urlToDelete) {
 
 async function getUserWhitelist() {
   try {
-    const token = "<replace with actual token>"; // to be retrieved from storage
-    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/whitelist', {
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; // to be retrieved from storage
+    const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/whitelist', {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -419,8 +419,8 @@ async function getUserWhitelist() {
 async function updateLastVisitedBlacklistedAt() { // backend will automatically update the date to today - need to fix timezone tho
   try {
     console.log("🥨 in updateLastVisitedBlacklistedAt");
-    const token = "<replace with actual token>"; //to be retrieved from storage
-    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/stats/update-visited-blacklist', {
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; //to be retrieved from storage
+    const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/stats/update-visited-blacklist', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -445,8 +445,8 @@ async function updateLastVisitedBlacklistedAt() { // backend will automatically 
 
 async function getLastVisitedBlacklistedAt() { 
   try {
-  const token = "<replace with actual token>"; // to be retrieved from storage
-    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/stats/last-visited-blacklist', {
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; // to be retrieved from storage
+    const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/stats/last-visited-blacklist', {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -472,8 +472,8 @@ async function getLastVisitedBlacklistedAt() {
 
 async function getAccountCreationDate() { 
    try {
-  const token = "<replace with actual token>"; // to be retrieved from storage
-    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/stats/account-creation-date', {
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; // to be retrieved from storage
+    const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/stats/account-creation-date', {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,

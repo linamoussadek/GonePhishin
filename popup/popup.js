@@ -684,9 +684,17 @@ function setupEventListeners() {
     document.getElementById("login").addEventListener("click", async () => {
         alert("login button clicked");
         // this token shouldn't be here - to be removed
-        const token = 'bla';
+        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0';
         chrome.runtime.sendMessage({ type: "GET_ACCOUNT_CREATION_DATE", token }); // replace action w/ LOGIN
     });
+
+    /* // Add to white list button
+    document.getElementById("Add to Whitelist").addEventListener("click", async () => {
+        alert("add to whitelist button clicked");
+        // this token shouldn't be here - to be removed
+        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0';
+        chrome.runtime.sendMessage({ type: "ADD_WHITELIST", token }); // replace action w/ LOGIN
+    }); */ //VALARIE
     
     // View all activity
     document.getElementById('viewAllActivity').addEventListener('click', async () => {
