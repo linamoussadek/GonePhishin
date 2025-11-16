@@ -237,6 +237,13 @@ async function urlScan(url) {
     return { success: false, message: submission.message };
   }
 
+  // Send failure JSON to popup as well
+    chrome.runtime.sendMessage({
+      type: "URL_SCAN_RESULT",
+      url,
+      result: submission
+    });
+
   // wait before polling
   await new Promise((r) => setTimeout(r, 10000));
 
@@ -258,9 +265,17 @@ async function urlScan(url) {
     };
   }
 
+  // Send result to popup
+  chrome.runtime.sendMessage({
+    type: "URL_SCAN_RESULT",
+    url,
+    result: poll
+  }); 
+
   console.log("malicious:", result.verdicts.overall.malicious);
   return { success: true, message: "Scan successful", data: { isMalicious: result.verdicts.overall.malicious } };
-};
+}; 
+
 
 // atm it's only working when you open a new tab or if you're on an existing tab and go to a new website
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {

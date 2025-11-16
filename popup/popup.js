@@ -8,6 +8,133 @@ let currentTab = null;
 let currentSiteData = null;
 let protectionLayersData = {};
 
+// Show an user friendly summary instead of raw JSON
+function showJsonResponseModal(url, result) {
+    const modal = document.getElementById('layerModal');
+    const body = document.getElementById('modalBody');
+    const title = document.getElementById('modalTitle');
+
+    // Figure out hostname
+    let hostname = 'Unknown';
+    try {
+        // Prefer the raw URL from backend if present, fall back to tab URL
+        const rawUrl = result?.data?.raw?.url || url;
+        hostname = new URL(rawUrl).hostname;
+    } catch (e) {
+        console.warn('Could not parse hostname for modal:', e);
+    }
+
+    // Figure out status
+    const isMalicious = !!result?.data?.isMalicious;
+    const severity   = isMalicious ? 'critical' : 'secure';
+    const statusText = isMalicious ? 'Potential phishing detected'
+                                   : 'Site looks clean';
+
+    const statusEmoji = isMalicious ? '🔴' : '🟢';
+
+    // Use currentSiteData.timestamp if set, else "just now"
+    let checkedText = 'just now';
+    if (currentSiteData?.timestamp) {
+        checkedText = getTimeAgo(currentSiteData.timestamp);
+    }
+
+    title.textContent = 'URL Scan Result';
+
+    body.innerHTML = `
+        <div class="layer-details">
+            <p class="layer-description">
+                Latest result from URLScan.io for the current site:
+            </p>
+
+            <div class="details-section">
+                <h4>Current site</h4>
+                <p><strong>${hostname}</strong></p>
+            </div>
+
+            <div class="details-section">
+                <h4>Status</h4>
+                <div class="assessment-badge ${severity}">
+                    <span class="assessment-icon">${statusEmoji}</span>
+                    <span class="assessment-text">${statusText}</span>
+                </div>
+            </div>
+
+            <div class="details-section">
+                <h4>Source</h4>
+                <p>URLScan.io (via Gone Phishin’ backend)</p>
+            </div>
+
+            <div class="details-section">
+                <h4>Checked</h4>
+                <p>${checkedText}</p>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+}
+
+// Listen for scan results from background
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type !== "URL_SCAN_RESULT") return;
+
+    console.log("Got URL scan result in popup:", message);
+
+    const { url, result } = message;
+
+    // Open a modal showing the full JSON
+    showJsonResponseModal(url, result);
+
+    // Show the hostname in the “Current Site” section
+    try {
+        const hostname = new URL(url).hostname;
+        document.getElementById("currentSiteUrl").textContent = hostname;
+
+        // If scan failed or no result
+        if (!result || !result.success) {
+            const msg = result?.message || "Scan failed";
+            updateCurrentSite(msg, "warning");
+            updateSecurityBadge("warning", "Scan issue");
+            return;
+        }
+
+        const isMalicious = result.data?.isMalicious;
+        const severity = isMalicious ? "critical" : "secure";
+        const statusText = isMalicious
+            ? "Potential phishing detected"
+            : "Site looks clean";
+
+        // Save something in currentSiteData so modal still works
+        currentSiteData = {
+            hostname,
+            severity,
+            timestamp: Date.now(),
+            source: "urlscan",
+            isMalicious,
+        };
+
+        updateCurrentSite(statusText, severity);
+        updateSecurityBadge(severity, statusText);
+
+        // Show an alert card if malicious
+        if (isMalicious) {
+            showAlerts({
+                detectedIssues: [{
+                    message: "URLScan flagged this site as suspicious.",
+                    type: "urlscan",
+                    severity: "critical"
+                }]
+            });
+        } else {
+            hideAlerts();
+        }
+
+    } catch (e) {
+        console.error("Error handling URL_SCAN_RESULT in popup:", e);
+    }
+});
+
+
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🛡️ Gone Phishin\' Extension - Initializing...');
