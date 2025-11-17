@@ -330,6 +330,14 @@ body::before {
     border: 2px solid var(--border);
 }
 
+.current-site-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;    
+    padding: 12px 20px;
+    min-height: 52px;    
+}
+
 .current-site-card.secure {
     border-color: var(--status-secure);
 }
@@ -414,7 +422,8 @@ body::before {
     justify-content: center;
     gap: var(--spacing-xs);
 
-    padding: 6px 16px;           
+    padding: 6px 16px;     
+    padding-bottom: 30px;      
     border-radius: 999px;          
     line-height: 1;                  
 
@@ -424,20 +433,6 @@ body::before {
     
     font-size: 0.875rem;
     font-weight: 600;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-xl);
-}
-
-
-.security-badge {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-xl);
-    font-size: 0.875rem;
-    font-weight: 600;
-    background: var(--bg-tertiary);
 }
 
 .security-badge.secure {
@@ -507,15 +502,24 @@ body::before {
    PROTECTION LAYERS
    ============================================ */
 
-.protection-layers-card {
+.protection-layers-card,
+.recent-activity-card {
     border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 550px;    
+    overflow: hidden;
 }
+
 
 .layers-container {
     padding: var(--spacing-md);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
+
+    overflow-y: auto; 
+    padding-right: 8px;
 }
 
 .protection-layer {
@@ -749,14 +753,20 @@ body::before {
    ============================================ */
 
 .recent-activity-card {
-    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;   
+    overflow: hidden;  
 }
+
 
 .activity-timeline {
     padding: var(--spacing-md);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
+
+    overflow-y: auto;
+    padding-right: 8px;
 }
 
 .activity-item {
