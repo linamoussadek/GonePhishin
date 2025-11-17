@@ -323,8 +323,15 @@ async function getUserInfo() {
 
 async function addUrlToUserWhitelist(urlToAdd) { 
   try {
-    console.log("🦴 in addUrlToUserWhitelist");
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; //to be retrieved from storage
+    console.log("🦴 in addUrlToUserWhitelist, urlToAdd =", urlToAdd);
+
+    if (!urlToAdd) {
+      console.error("🦴 addUrlToUserWhitelist called without a URL");
+      return { error: true, message: "No URL provided" };
+    }
+
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; // TODO: retrieve from storage
+
     const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/whitelist/add', {
       method: 'POST',
       headers: {
@@ -333,27 +340,28 @@ async function addUrlToUserWhitelist(urlToAdd) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        "url": urlToAdd,
+        url: urlToAdd,
       })
     });
 
-    console.log("🦴 in addUrlToUserWhitelist here is my res: ", res);
+    console.log("🦴 addUrlToUserWhitelist response object:", res);
 
     if (!res.ok) {
       const text = await res.text();
-      console.error("🦴 in addUrlToUserWhitelist returned error:", res.status, text);
-      return {error: true, status: res.status, text};
+      console.error("🦴 addUrlToUserWhitelist error:", res.status, text);
+      return { error: true, status: res.status, text };
     }
 
     const data = await res.json();
-    console.log("🦴 in addUrlToUserWhitelist function - response: ", data);
+    console.log("🦴 addUrlToUserWhitelist success:", data);
+    return { success: true, data };
 
   } catch (err) {
-    console.log("🦴 in addUrlToUserWhitelist fetch failed:", err);
-    return {error: true, message: err.message};
+    console.log("🦴 addUrlToUserWhitelist fetch failed:", err);
+    return { error: true, message: err.message };
   }
+}
 
-};
 
 async function removeUrlFromUserWhitelist(urlToDelete) {
   try {
@@ -514,10 +522,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           sendResponse({success: true, data});
           break;
 
-        case "ADD_WHITELIST":
-          // need token
-          sendResponse(await addUrlToUserWhitelist('https://www.bla.ca')); // msg.url
+        case "ADD_WHITELIST": {
+          // URL comes from popup.js
+          const url = msg.url;
+          const result = await addUrlToUserWhitelist(url);
+          sendResponse(result);
           break;
+        }
 
         case "REMOVE_WHITELIST":
           // need token

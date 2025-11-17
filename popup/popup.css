@@ -3,6 +3,12 @@
    Capstone Project - Cybersecurity Extension
    ============================================ */
 
+html, body {
+    width: 700px;     
+    min-height: 600px;
+    max-height: 800px;
+}
+
 :root {
     /* Color Palette - Phishing/Cybersecurity Dark Theme */
     --primary: #00d4ff;
@@ -73,9 +79,9 @@
 }
 
 body {
-    width: 420px;
+    /* width: 420px;
     min-height: 600px;
-    max-height: 800px;
+    max-height: 800px; */
     font-family: 'Courier New', 'Monaco', 'Menlo', 'Consolas', monospace;
     background: var(--bg-primary);
     background-image: 
@@ -87,7 +93,18 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     position: relative;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
+
+.header,
+.container {
+    width: 640px;    
+    max-width: 100%;  
+}
+
 
 body::before {
     content: '';
@@ -279,11 +296,12 @@ body::before {
 }
 
 .card-header {
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: center;   
+    padding: 12px 20px;   
+    min-height: 48px;     
+    border-bottom: 1px solid var(--border);
     background: var(--bg-secondary);
 }
 
@@ -389,6 +407,27 @@ body::before {
     font-size: 0.875rem;
     color: var(--text-secondary);
 }
+
+#securityBadge.security-badge {
+    display: inline-flex;             
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+
+    padding: 6px 16px;           
+    border-radius: 999px;          
+    line-height: 1;                  
+
+    flex-shrink: 0;                 
+    margin-right: 4px;              
+    width: fit-content;   
+    
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-xl);
+}
+
 
 .security-badge {
     display: flex;
