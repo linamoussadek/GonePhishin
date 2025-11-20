@@ -280,6 +280,7 @@ async function urlScan(url) {
 // atm it's only working when you open a new tab or if you're on an existing tab and go to a new website
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   const url = changeInfo.url;
+  // avoid google login redirect link as well
   if (!url || ['chrome://', 'about://', 'chrome-extension://'].some(p => url.startsWith(p))) return;
   if (!tab.active) return; // revisit
   console.log(url);
@@ -557,7 +558,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           break;
 
         case "OAUTH_COMPLETE":
-          console.log("Token received from callback:", msg.token);
+          console.log("⛰️ Token received from callback:", msg.token);
           localStorage.setItem("token", msg.token);
           sendResponse({success: true});
           break;

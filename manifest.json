@@ -46,7 +46,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["warning.html", "warning.css", "warning.js", "interstitial.html", "interstitial.js", "icons/*"],
+      "resources": ["warning.html", "warning.css", "warning.js", "interstitial.html", "interstitial.js", "icons/*", "login/redirect.html", "login/redirect.js"],
       "matches": ["<all_urls>"]
     }
   ],
