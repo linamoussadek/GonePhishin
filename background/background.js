@@ -290,7 +290,39 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 /* -------------------- start of user actions code -------------------- */
 
 // this function will generate the JWT
-async function login() { };
+async function login() { 
+  try {
+    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/auth/google', {
+      method: 'GET',
+      headers: {
+        'ngrok-skip-browser-warning': '69420'
+      }
+    });
+
+    console.log("🍇 this is the raw res", res);
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("🍇 Backend returned error:", res.status, text);
+      return { error: true, status: res.status, text};
+    }
+
+    if (!("url" in res)) {
+      console.error("🍇 Response has no 'url' attribute:", res);
+    } 
+
+    const data = { loginUrl: res.url };
+    console.log("🍇 this is the url data", data);
+
+   // const data = await res.json();
+  //  console.log("🍇 In login function - response:", data);
+    return data;
+
+  } catch (err) {
+    console.error("🍇 (login) Fetch failed:", err);
+    return { error: true, message: err.message };
+  }
+};
 
 // functions below require JWT
 async function getUserInfo() { 
@@ -312,7 +344,7 @@ async function getUserInfo() {
 
     const data = await res.json();
     console.log("🧃In getUserWhitelist function - response: ", data);
-    return data
+    return data;
 
   } catch (err) {
     console.error("🧃Fetch failed:", err);
@@ -511,8 +543,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       let data;
       switch (msg.type) {
         case "LOGIN":
-          token = msg.token;
-          sendResponse({ success: true });
+          //token = msg.token;
+          console.log("🍇In switch - before calling login");
+          data = await login();
+          console.log("🍇In switch - after login call - data received: ", data);
+          if (!data.loginUrl) {
+            // do something
+            sendResponse({ success: false, data})
+          } else {
+            console.log("🍇In switch - we have a loginUrl attribute");
+          }
+          sendResponse({ success: true, data });
+          break;
+
+        case "OAUTH_COMPLETE":
+          console.log("Token received from callback:", msg.token);
+          localStorage.setItem("token", msg.token);
+          sendResponse({success: true});
           break;
 
         case "GET_USER_INFO":

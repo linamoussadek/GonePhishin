@@ -683,9 +683,22 @@ function setupEventListeners() {
     // login button
     document.getElementById("login").addEventListener("click", async () => {
         alert("login button clicked");
-        // this token shouldn't be here - to be removed
-        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0';
-        chrome.runtime.sendMessage({ type: "GET_ACCOUNT_CREATION_DATE", token }); // replace action w/ LOGIN
+        chrome.runtime.sendMessage({ type: "LOGIN" },
+            (res) => {
+                if (!res || !res.success) {
+                    return alert("Failed to login: " + (res?.message || "Unknown error"));
+                }
+                if (res.data?.loginUrl) {
+                    // opens a google login window
+                    chrome.windows.create({
+                    url: res.data.loginUrl,
+                    type: "popup",
+                    width: 500,
+                    height: 700,
+                    });
+                }
+            }
+        ); 
     });
 
     // Add to whitelist button (Val)
