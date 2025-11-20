@@ -558,8 +558,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           break;
 
         case "OAUTH_COMPLETE":
-          console.log("⛰️ Token received from callback:", msg.token);
-          localStorage.setItem("token", msg.token);
+          console.log("⛰️ Token received from login:", msg.token);
+          chrome.storage.local.set({token: msg.token});
           sendResponse({success: true});
           break;
 
