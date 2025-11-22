@@ -1176,3 +1176,31 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+
+// --------------------------
+// Site Info Modal (URLScan) (Val)
+// --------------------------
+
+const siteInfoBtn = document.getElementById("siteInfoBtn");
+const siteInfoModal = document.getElementById("siteInfoModal");
+const closeSiteModal = document.getElementById("closeSiteModal");
+
+if (siteInfoBtn) {
+    siteInfoBtn.addEventListener("click", () => {
+        console.log("Opening site info modal");
+        siteInfoModal.style.display = "block";
+    });
+}
+
+if (closeSiteModal) {
+    closeSiteModal.addEventListener("click", () => {
+        siteInfoModal.style.display = "none";
+    });
+}
+
+// Close when clicking the background
+siteInfoModal?.querySelector(".modal-overlay")?.addEventListener("click", () => {
+    siteInfoModal.style.display = "none";
+});
+

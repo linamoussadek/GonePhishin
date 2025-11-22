@@ -4,9 +4,8 @@
    ============================================ */
 
 html, body {
-    width: 700px;     
-    min-height: 600px;
-    max-height: 800px;
+    width: 700px;
+    min-height: 1000px;
 }
 
 :root {
@@ -79,9 +78,6 @@ html, body {
 }
 
 body {
-    /* width: 420px;
-    min-height: 600px;
-    max-height: 800px; */
     font-family: 'Courier New', 'Monaco', 'Menlo', 'Consolas', monospace;
     background: var(--bg-primary);
     background-image: 
@@ -247,7 +243,7 @@ body::before {
     flex-direction: column;
     gap: var(--spacing-md);
     overflow-y: auto;
-    max-height: calc(800px - 100px);
+    min-height: 1000px;
 }
 
 /* ============================================
@@ -300,9 +296,10 @@ body::before {
     justify-content: space-between;
     align-items: center;   
     padding: 12px 20px;   
-    min-height: 48px;     
+    min-height: 50px;     
     border-bottom: 1px solid var(--border);
     background: var(--bg-secondary);
+    width: 100%; 
 }
 
 .card-title-group {
@@ -328,14 +325,16 @@ body::before {
 
 .current-site-card {
     border: 2px solid var(--border);
+    padding: 20px 30px 32px; 
+    min-height: 180px;
 }
 
 .current-site-card .card-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;    
-    padding: 12px 20px;
-    min-height: 52px;    
+    align-items: center;  
+    margin-bottom: 15px;  
+   
 }
 
 .current-site-card.secure {
@@ -422,8 +421,7 @@ body::before {
     justify-content: center;
     gap: var(--spacing-xs);
 
-    padding: 6px 16px;     
-    padding-bottom: 30px;      
+    padding: 6px 16px;   
     border-radius: 999px;          
     line-height: 1;                  
 
@@ -502,12 +500,11 @@ body::before {
    PROTECTION LAYERS
    ============================================ */
 
-.protection-layers-card,
-.recent-activity-card {
+.protection-layers-card{
     border: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    height: 550px;    
+    min-height: 700px;    
     overflow: hidden;
 }
 
@@ -755,9 +752,9 @@ body::before {
 .recent-activity-card {
     display: flex;
     flex-direction: column;   
-    overflow: hidden;  
+    overflow: hidden;
+    min-height: 300px; 
 }
-
 
 .activity-timeline {
     padding: var(--spacing-md);
