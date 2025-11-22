@@ -983,3 +983,84 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+// ============================================
+// WHITELIST DETAILS
+// ============================================
+
+function renderWhitelist(urls) {
+    const container = document.getElementById("whitelistContainer");
+
+    if (!urls.length) {
+        container.innerHTML = `<div class="whitelist-empty">No whitelisted URLs yet.</div>`;
+        return;
+    }
+
+    let html = "";
+
+    urls.forEach((item, index) => {
+        const url = item.url || item;
+
+        html += `<div class="whitelist-item">
+                <span class="whitelist-index">#${index + 1}</span>
+                <span class="whitelist-url">${url}</span>
+
+                <button class="btn btn-danger whitelist-delete-btn" data-url="${url}">
+                    Remove
+                </button>
+            </div>`;
+        });
+
+    container.innerHTML = html;
+
+    // Attach delete listeners
+    document.querySelectorAll(".whitelist-delete-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            const url = e.target.getAttribute("data-url");
+            removeWhitelistItem(url);
+        });
+    });
+}
+
+async function loadWhitelist() {
+    const container = document.getElementById("whitelistContainer");
+    container.innerHTML = `<div class="whitelist-loading">Loading whitelist...</div>`;
+
+    chrome.runtime.sendMessage({ type: "GET_WHITELIST" }, (response) => {
+        if (!response || response.error) {
+            container.innerHTML = `<div class="whitelist-error">Failed to load whitelist.</div>`;
+            return;
+        }
+
+        const urls = response.data?.whitelistedUrls || [];
+        renderWhitelist(urls);
+    });
+}
+
+document.getElementById("refreshWhitelistBtn").addEventListener("click", loadWhitelist);
+
+// When the tab becomes visible
+document.addEventListener("DOMContentLoaded", () => {
+    loadWhitelist();
+});
+
+function removeWhitelistItem(urlToRemove) {
+    if (!confirm(`Remove ${urlToRemove} from your whitelist?`)) return;
+
+    chrome.runtime.sendMessage(
+        { type: "REMOVE_WHITELIST", url: urlToRemove },
+        (response) => {
+            console.log("REMOVE_WHITELIST response:", response);
+
+            if (!response || response.error) {
+                alert("Failed to remove URL from whitelist.");
+                return;
+            }
+
+            loadWhitelist();
+        }
+    );
+}
+
+
+

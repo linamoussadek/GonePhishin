@@ -224,6 +224,10 @@ body::before {
         0 4px 6px -1px rgba(0, 0, 0, 0.3),
         0 0 0 1px rgba(0, 212, 255, 0.1);
     position: relative;
+
+    padding-left: var(--spacing-xl);
+    padding-right: var(--spacing-xl);
+
 }
 
 .dashboard-section::before {
@@ -1471,6 +1475,25 @@ body::before {
     top: var(--spacing-md);
     right: var(--spacing-md);
 }
+
+/* ============================================
+   WHITELIST DETAILS
+   ============================================ */
+
+.whitelist-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+#whitelistTab .dashboard-section {
+    margin-left: var(--spacing-xl);
+    margin-right: var(--spacing-xl);
+    
+    padding-left: var(--spacing-xl);
+    padding-right: var(--spacing-xl);
+}
+
 
 /* ============================================
    SITE ANALYSIS STYLES
