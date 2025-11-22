@@ -328,7 +328,7 @@ async function login() {
 // functions below require JWT
 async function getUserInfo() { 
   try {
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; // to be retrieved from storage
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzgzNjQ0MCwiZXhwIjoxNzY0NDQxMjQwfQ.NmRzoBi1lGfxHeP1ZaLeZlWFaz_qxCU5BrwsgAGyJNs"; // to be retrieved from storage
     const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/info', {
       method: 'GET',
       headers: {
@@ -354,6 +354,7 @@ async function getUserInfo() {
 
 };
 
+// Valarie
 async function addUrlToUserWhitelist(urlToAdd) { 
   try {
     console.log("🦴 in addUrlToUserWhitelist, urlToAdd =", urlToAdd);
@@ -363,7 +364,7 @@ async function addUrlToUserWhitelist(urlToAdd) {
       return { error: true, message: "No URL provided" };
     }
 
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; // TODO: retrieve from storage
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzgzNjQ0MCwiZXhwIjoxNzY0NDQxMjQwfQ.NmRzoBi1lGfxHeP1ZaLeZlWFaz_qxCU5BrwsgAGyJNs"; // TODO: retrieve from storage
 
     const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/whitelist/add', {
       method: 'POST',
@@ -399,7 +400,7 @@ async function addUrlToUserWhitelist(urlToAdd) {
 async function removeUrlFromUserWhitelist(urlToDelete) {
   try {
     console.log("🍟 in RemoveUrlFromUserWhitelist", typeof(urlToDelete));
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; //to be retrieved from storage
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzgzNjQ0MCwiZXhwIjoxNzY0NDQxMjQwfQ.NmRzoBi1lGfxHeP1ZaLeZlWFaz_qxCU5BrwsgAGyJNs"; //to be retrieved from storage
     const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/whitelist/delete', {
       method: 'DELETE',
       headers: {
@@ -423,6 +424,7 @@ async function removeUrlFromUserWhitelist(urlToDelete) {
 
     const data = await res.json();
     console.log("🍟 in RemoveUrlFromUserWhitelist function - response: ", data);
+    return { success: true, data };
 
   } catch (err) {
     console.error("🍟  RemoveUrlFromUserWhitelist Fetch failed:", err);
@@ -432,7 +434,7 @@ async function removeUrlFromUserWhitelist(urlToDelete) {
 
 async function getUserWhitelist() {
   try {
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; // to be retrieved from storage
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzgzNjQ0MCwiZXhwIjoxNzY0NDQxMjQwfQ.NmRzoBi1lGfxHeP1ZaLeZlWFaz_qxCU5BrwsgAGyJNs"; // to be retrieved from storage
     const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/whitelist', {
       method: 'GET',
       headers: {
@@ -460,7 +462,7 @@ async function getUserWhitelist() {
 async function updateLastVisitedBlacklistedAt() { // backend will automatically update the date to today - need to fix timezone tho
   try {
     console.log("🥨 in updateLastVisitedBlacklistedAt");
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; //to be retrieved from storage
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzgzNjQ0MCwiZXhwIjoxNzY0NDQxMjQwfQ.NmRzoBi1lGfxHeP1ZaLeZlWFaz_qxCU5BrwsgAGyJNs"; //to be retrieved from storage
     const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/stats/update-visited-blacklist', {
       method: 'POST',
       headers: {
@@ -486,7 +488,7 @@ async function updateLastVisitedBlacklistedAt() { // backend will automatically 
 
 async function getLastVisitedBlacklistedAt() { 
   try {
-  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; // to be retrieved from storage
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzgzNjQ0MCwiZXhwIjoxNzY0NDQxMjQwfQ.NmRzoBi1lGfxHeP1ZaLeZlWFaz_qxCU5BrwsgAGyJNs"; // to be retrieved from storage
     const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/stats/last-visited-blacklist', {
       method: 'GET',
       headers: {
@@ -513,7 +515,7 @@ async function getLastVisitedBlacklistedAt() {
 
 async function getAccountCreationDate() { 
    try {
-  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzMyNTIxNSwiZXhwIjoxNzYzOTMwMDE1fQ.pGRsyTedVFWTz_Xr0npf-dNfdFq2PY8LnJBEf1jrPj0"; // to be retrieved from storage
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTA4OWZmZjk5ZmY4MjEyMDQ0MzYwNGUiLCJnb29nbGVJZCI6IjExNTg2MzE4NDA3OTA3MjAzODkyMiIsImlhdCI6MTc2MzgzNjQ0MCwiZXhwIjoxNzY0NDQxMjQwfQ.NmRzoBi1lGfxHeP1ZaLeZlWFaz_qxCU5BrwsgAGyJNs"; // to be retrieved from storage
     const res = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/user/stats/account-creation-date', {
       method: 'GET',
       headers: {
@@ -580,14 +582,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
         case "REMOVE_WHITELIST":
           // need token
-          sendResponse(await removeUrlFromUserWhitelist('abcdefg.ca')); // msg.url
+          const url = msg.url;
+          sendResponse(await removeUrlFromUserWhitelist(url));
           break;
 
         case "GET_WHITELIST":
           // need token
           data = await getUserWhitelist();
           console.log("🍊In switch - data received: ", data);
-          sendResponse({ success: true, data });
+          sendResponse({success: !data.error, data});
           break;
 
         case "UPDATE_LAST_VISITED_BLACKLIST":

@@ -24,6 +24,7 @@
                 <button class="nav-tab" data-tab="threats">Threats</button>
                 <button class="nav-tab" data-tab="reports">Reports</button>
                 <button class="nav-tab" data-tab="technical">Technical</button>
+                <button class="nav-tab" data-tab="whitelist">White List</button>
             </nav>
         </div>
     </header>
@@ -461,6 +462,26 @@
         </section>
     </main>
 
+    <!-- Whitelist Tab -->
+    <main>
+        <section class="tab-content" id="whitelistTab">
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>🛡️ Whitelisted URLs</h2>
+                    <button class="btn btn-secondary" id="refreshWhitelistBtn">
+                        <span class="btn-icon">🔄</span>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+
+                <!-- Whitelist Container -->
+                <div class="whitelist-container" id="whitelistContainer">
+                    <div class="whitelist-loading">Loading whitelist...</div>
+                </div>
+            </section>
+        </section>
+    </main>
+    
     <!-- Modals -->
     <div class="modal" id="layerInfoModal" style="display: none;">
         <div class="modal-overlay"></div>
