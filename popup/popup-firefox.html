@@ -237,6 +237,30 @@
                 <p class="loading">Loading certificate information...</p>
             </div>
         </section>
+
+        <!-- Security Analysis Section -->
+        <section class="security-analysis" id="securityAnalysis" style="display: none;">
+            <div class="analysis-header">
+                <h3>Security Analysis</h3>
+            </div>
+            <div class="analysis-score">
+                <div class="score-display">
+                    <span class="score-label">Anomaly Score:</span>
+                    <span class="score-value" id="anomalyScoreValue">0</span>
+                    <span class="score-max">/100</span>
+                    <span class="score-badge" id="scoreBadge">🟢</span>
+                </div>
+                <div class="confidence-display">
+                    <span class="confidence-label">Confidence:</span>
+                    <span class="confidence-value" id="confidenceValue">0%</span>
+                </div>
+                <div class="status-display">
+                    <span class="status-label">Status:</span>
+                    <span class="status-value" id="statusValue">SECURE</span>
+                </div>
+            </div>
+            <div class="score-breakdown" id="scoreBreakdown"></div>
+        </section>
     </main>
 
     <script src="popup-firefox.js"></script>

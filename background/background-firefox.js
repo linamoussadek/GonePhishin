@@ -41,6 +41,13 @@ browserAPI.webRequest.onHeadersReceived.addListener(
             const hostname = new URL(details.url).hostname;
             const certData = extractCertificateData(securityInfo, hostname);
             
+            // Get certificate history for scoring
+            const certHistory = await getCertificateHistory(hostname);
+            
+            // Calculate anomaly score
+            const analysis = calculateAnomalyScore(securityInfo, hostname, certHistory);
+            certData.anomalyScore = analysis;
+            
             browserAPI.storage.local.set({
               [`certificate_${hostname}_${Date.now()}`]: {
                 ...certData,
@@ -50,7 +57,7 @@ browserAPI.webRequest.onHeadersReceived.addListener(
               }
             });
             
-            console.log('🔐 Certificate info stored for', hostname);
+            console.log('🔐 Certificate info stored for', hostname, 'Score:', analysis.score);
           }
         }
       } catch (error) {
@@ -198,6 +205,252 @@ function checkExpiration(validity) {
     expired: expirationDate < now,
     expiresSoon: daysUntilExpiration <= 30 && daysUntilExpiration > 0,
     daysUntilExpiration: daysUntilExpiration
+  };
+}
+
+// Get certificate history for a hostname
+async function getCertificateHistory(hostname) {
+  try {
+    const storageData = await browserAPI.storage.local.get();
+    const certKeys = Object.keys(storageData).filter(key => 
+      key.startsWith(`certificate_${hostname}_`)
+    );
+    
+    return certKeys
+      .map(key => storageData[key])
+      .filter(data => data && data.certificate && data.timestamp)
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 10); // Keep last 10 certificates
+  } catch (error) {
+    console.error('Error getting certificate history:', error);
+    return [];
+  }
+}
+
+// Check if hostname is a CDN
+function isCDN(hostname) {
+  const cdnPatterns = [
+    /cloudflare/i,
+    /cloudfront/i,
+    /akamaized/i,
+    /akamai/i,
+    /fastly/i,
+    /\.cdn\./i,
+    /cdn\./i
+  ];
+  return cdnPatterns.some(pattern => pattern.test(hostname));
+}
+
+// Calculate anomaly score
+function calculateAnomalyScore(securityInfo, hostname, certHistory) {
+  if (!securityInfo || !securityInfo.certificates || securityInfo.certificates.length === 0) {
+    return {
+      score: 0,
+      confidence: 0,
+      severity: 'secure',
+      breakdown: {},
+      findings: []
+    };
+  }
+
+  const cert = securityInfo.certificates[0];
+  const isCDNDomain = isCDN(hostname);
+  let score = 0;
+  let confidence = 100;
+  const breakdown = {};
+  const findings = [];
+
+  // Check expiration
+  if (cert.validity && cert.validity.end) {
+    const expirationDate = new Date(cert.validity.end);
+    const now = new Date();
+    const daysUntilExpiration = Math.floor((expirationDate - now) / (1000 * 60 * 60 * 24));
+    
+    if (expirationDate < now) {
+      score += 30;
+      breakdown.expiration = 30;
+      findings.push({ type: 'expired', message: `Certificate expired ${Math.abs(daysUntilExpiration)} days ago`, points: 30 });
+    } else if (daysUntilExpiration < 7) {
+      score += 15;
+      breakdown.expiration = 15;
+      findings.push({ type: 'expiring_soon', message: `Certificate expires in ${daysUntilExpiration} days`, points: 15 });
+    } else {
+      breakdown.expiration = 0;
+    }
+  }
+
+  // Check TLS version
+  const tlsVersion = securityInfo.protocolVersion || '';
+  if (tlsVersion === 'TLSv1.0' || tlsVersion === 'TLSv1.1') {
+    score += 20;
+    breakdown.tlsVersion = 20;
+    findings.push({ type: 'weak_tls', message: `Using ${tlsVersion} (should use TLS 1.2+)`, points: 20 });
+  } else {
+    breakdown.tlsVersion = 0;
+  }
+
+  // Check cipher suite
+  const cipherSuite = securityInfo.cipherSuite || '';
+  const weakCiphers = ['RC4', '3DES', 'MD5', 'DES', 'NULL'];
+  const hasWeakCipher = weakCiphers.some(cipher => cipherSuite.includes(cipher));
+  if (hasWeakCipher) {
+    score += 15;
+    breakdown.cipher = 15;
+    findings.push({ type: 'weak_cipher', message: `Weak cipher detected: ${cipherSuite}`, points: 15 });
+  } else {
+    breakdown.cipher = 0;
+  }
+
+  // Check certificate chain
+  const chainLength = securityInfo.certificates.length;
+  if (chainLength < 2) {
+    score += 15;
+    confidence -= 10;
+    breakdown.chain = 15;
+    findings.push({ type: 'incomplete_chain', message: `Incomplete certificate chain (${chainLength} certs)`, points: 15 });
+  } else {
+    breakdown.chain = 0;
+  }
+
+  // Check if self-signed (issuer same as subject)
+  const subject = cert.subject || '';
+  const issuer = cert.issuer || (securityInfo.certificates.length > 1 ? securityInfo.certificates[1].subject : '');
+  if (subject === issuer && subject !== '') {
+    score += 35;
+    breakdown.selfSigned = 35;
+    findings.push({ type: 'self_signed', message: 'Self-signed certificate detected', points: 35 });
+  } else {
+    breakdown.selfSigned = 0;
+  }
+
+  // Check hostname mismatch (simplified - Firefox handles this, but we can check subject)
+  if (subject && !subject.includes(hostname) && !hostname.includes(subject.replace(/CN=/i, '').trim())) {
+    // This is a simplified check - Firefox would reject mismatches before we see them
+    // But we can flag suspicious patterns
+    const subjectDomain = subject.match(/CN=([^,]+)/i);
+    if (subjectDomain && !hostname.includes(subjectDomain[1]) && !subjectDomain[1].includes(hostname)) {
+      score += 35;
+      breakdown.hostnameMismatch = 35;
+      findings.push({ type: 'hostname_mismatch', message: `Hostname mismatch: ${hostname} vs ${subjectDomain[1]}`, points: 35 });
+    } else {
+      breakdown.hostnameMismatch = 0;
+    }
+  } else {
+    breakdown.hostnameMismatch = 0;
+  }
+
+  // Check certificate changes (if history available)
+  if (certHistory.length > 0 && !isCDNDomain) {
+    const lastCert = certHistory[0];
+    const timeDiff = Date.now() - lastCert.timestamp;
+    const hoursDiff = timeDiff / (1000 * 60 * 60);
+    
+    if (lastCert.certificate && lastCert.certificate.fingerprint !== generateFingerprint(cert)) {
+      if (hoursDiff < 1) {
+        score += 10;
+        breakdown.certChange = 10;
+        findings.push({ type: 'cert_changed', message: 'Certificate changed less than 1 hour ago', points: 10 });
+      } else {
+        breakdown.certChange = 0;
+      }
+    } else {
+      breakdown.certChange = 0;
+    }
+
+    // Check issuer changes
+    if (lastCert.certificate && lastCert.certificate.issuer !== issuer) {
+      if (hoursDiff < 1) {
+        score += 5;
+        breakdown.issuerChange = 5;
+        findings.push({ type: 'issuer_changed', message: 'Certificate issuer changed less than 1 hour ago', points: 5 });
+      } else {
+        breakdown.issuerChange = 0;
+      }
+    } else {
+      breakdown.issuerChange = 0;
+    }
+  } else {
+    breakdown.certChange = 0;
+    breakdown.issuerChange = 0;
+    if (certHistory.length === 0) {
+      confidence -= 15; // No history
+    }
+  }
+
+  // Check Let's Encrypt
+  if (issuer.includes("Let's Encrypt") || issuer.includes('Lets Encrypt')) {
+    score += 5;
+    breakdown.letsEncrypt = 5;
+    findings.push({ type: 'lets_encrypt', message: "Let's Encrypt certificate", points: 5, info: true });
+  } else {
+    breakdown.letsEncrypt = 0;
+  }
+
+  // Check validity period (if less than 1 day)
+  if (cert.validity && cert.validity.start && cert.validity.end) {
+    const validityDays = (new Date(cert.validity.end) - new Date(cert.validity.start)) / (1000 * 60 * 60 * 24);
+    if (validityDays < 1) {
+      score += 10;
+      breakdown.shortValidity = 10;
+      findings.push({ type: 'short_validity', message: 'Certificate validity period less than 1 day', points: 10 });
+    } else {
+      breakdown.shortValidity = 0;
+    }
+  } else {
+    breakdown.shortValidity = 0;
+  }
+
+  // Check certificate age (if less than 24 hours old)
+  if (cert.validity && cert.validity.start) {
+    const certAge = (Date.now() - new Date(cert.validity.start)) / (1000 * 60 * 60);
+    if (certAge < 24) {
+      confidence -= 10;
+    }
+  }
+
+  // CDN adjustment
+  if (isCDNDomain) {
+    confidence -= 5;
+    // Skip cert change checks for CDNs (already done above)
+  }
+
+  // Stability bonus (certificate stable for >14 days)
+  if (certHistory.length > 0) {
+    const oldestCert = certHistory[certHistory.length - 1];
+    if (oldestCert.timestamp) {
+      const stabilityDays = (Date.now() - oldestCert.timestamp) / (1000 * 60 * 60 * 24);
+      if (stabilityDays > 14) {
+        confidence = Math.min(100, confidence + 10);
+      }
+    }
+  }
+
+  // Critical findings boost confidence
+  const hasCritical = findings.some(f => f.points >= 30);
+  if (hasCritical) {
+    confidence = Math.max(95, confidence);
+  }
+
+  // Cap score at 100
+  score = Math.min(100, score);
+
+  // Determine severity
+  let severity = 'secure';
+  if (score >= 50) {
+    severity = 'critical';
+  } else if (score >= 20) {
+    severity = 'warning';
+  }
+
+  // Ensure confidence is 0-100
+  confidence = Math.max(0, Math.min(100, confidence));
+
+  return {
+    score,
+    confidence,
+    severity,
+    breakdown,
+    findings
   };
 }
 
