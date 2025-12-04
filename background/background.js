@@ -33,28 +33,28 @@ chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((details) => {
         return; // Don't track or upgrade localhost
       }
       
-      const tabId = details.request.tabId;
+    const tabId = details.request.tabId;
 
-      // Increment counters
-      totalUpgrades++;
-      const count = (tabUpgradeCounts.get(tabId) || 0) + 1;
-      tabUpgradeCounts.set(tabId, count);
+    // Increment counters
+    totalUpgrades++;
+    const count = (tabUpgradeCounts.get(tabId) || 0) + 1;
+    tabUpgradeCounts.set(tabId, count);
 
-      // Update badge to show upgrade happened
-      chrome.action.setBadgeText({ text: "🔒", tabId: tabId });
-      chrome.action.setBadgeBackgroundColor({ color: "#4CAF50", tabId: tabId });
+    // Update badge to show upgrade happened
+    chrome.action.setBadgeText({ text: "🔒", tabId: tabId });
+    chrome.action.setBadgeBackgroundColor({ color: "#4CAF50", tabId: tabId });
 
-      // Show a subtle notification
-      chrome.action.setTitle({
+    // Show a subtle notification
+    chrome.action.setTitle({
         title: `✅ Upgraded to HTTPS: ${hostname}`,
-        tabId: tabId
-      });
+      tabId: tabId
+    });
 
-      // Store upgrade info for popup
-      chrome.storage.local.set({
-        totalUpgrades: totalUpgrades,
-        lastUpgrade: { url: details.request.url, timestamp: Date.now() }
-      });
+    // Store upgrade info for popup
+    chrome.storage.local.set({
+      totalUpgrades: totalUpgrades,
+      lastUpgrade: { url: details.request.url, timestamp: Date.now() }
+    });
     } catch (e) {
       // Invalid URL, skip
       console.log('Skipping upgrade tracking for invalid URL:', details.request.url);
@@ -212,10 +212,10 @@ async function pollScanResult(uuid) {
 // successful scan returns {success: true, message: "Scan successful", data: {isMalicious: <boolean>} }
 async function urlScan(url) {
   try {
-    const submission = await submitScanToBackend(url);
+  const submission = await submitScanToBackend(url);
 
-    if (!submission.success) {
-      console.warn("Problem submitting scan:", submission.message);
+  if (!submission.success) {
+    console.warn("Problem submitting scan:", submission.message);
       // Store unavailable status
       const unavailableResult = { 
         success: false, 
@@ -225,24 +225,24 @@ async function urlScan(url) {
       storeUrlScanResult(url, unavailableResult);
       
       // Send message about unavailability
-      chrome.runtime.sendMessage({
-        type: "URL_SCAN_RESULT",
-        url,
+    chrome.runtime.sendMessage({
+      type: "URL_SCAN_RESULT",
+      url,
         result: unavailableResult
-      });
+    });
       
       return unavailableResult;
     }
 
-    // wait before polling
-    await new Promise((r) => setTimeout(r, 10000));
+  // wait before polling
+  await new Promise((r) => setTimeout(r, 10000));
 
-    // get polling result
-    const poll = await pollScanResult(submission.data.uuid);
-    console.log("polling result", poll);
+  // get polling result
+  const poll = await pollScanResult(submission.data.uuid);
+  console.log("polling result", poll);
     
-    if (!poll.success) {
-      console.warn(poll.message);
+  if (!poll.success) {
+    console.warn(poll.message);
       // Store unavailable status
       const unavailableResult = { 
         success: false, 
@@ -258,15 +258,15 @@ async function urlScan(url) {
       });
       
       return unavailableResult;
-    }
+  }
 
-    const result = poll.data;
+  const result = poll.data;
     const hasVerdicts = result.verdicts?.overall?.hasVerdicts;
     
-    if (!hasVerdicts) {
+  if (!hasVerdicts) {
       console.log("Unable to verify URL (no verdict)");
       const noVerdictResult = { 
-        success: false, 
+      success: false,
         unavailable: false,
         message: "We couldn't verify this URL."
       };
@@ -295,11 +295,11 @@ async function urlScan(url) {
     
     // Store URLScan result
     storeUrlScanResult(url, scanResult);
-    
-    // Send result to popup
-    chrome.runtime.sendMessage({
-      type: "URL_SCAN_RESULT",
-      url,
+
+  // Send result to popup
+  chrome.runtime.sendMessage({
+    type: "URL_SCAN_RESULT",
+    url,
       result: scanResult
     });
     
@@ -869,6 +869,215 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   }
 });
 
+// ============================================
+// Unified Mathematical Scoring System
+// ============================================
+// Feature weights (must sum to 1.0)
+const FEATURE_WEIGHTS = {
+  URLSCAN: 0.60,       // 60% - Most reliable signal when available
+  HEURISTICS: 0.25,    // 25% - Pattern-based analysis
+  HTTPS_ENFORCEMENT: 0.15,  // 15% - Important but binary
+  CONNECTION_SECURITY: 0.00  // 0% - Removed from scoring (handled by browser)
+};
+
+const MAX_SCORES = {
+  HEURISTICS: 200,  // Reduced max from heuristics (pattern-based analysis)
+  // Max breakdown: Form submissions (80-130), Link patterns (100-155), Network requests (60)
+  URLSCAN: 100,
+  HTTPS_ENFORCEMENT: 20,
+  CONNECTION_SECURITY: 10  // Not used in scoring
+};
+
+function normalizeScore(score, maxScore) {
+  if (maxScore === 0) return 0;
+  const clampedScore = Math.max(0, Math.min(score, maxScore));
+  return (clampedScore / maxScore) * 100;
+}
+
+function calculateHttpsEnforcementScore(wasUpgraded, isHTTPS) {
+  let score = 0, confidence = 100;
+  if (!isHTTPS) {
+    score = 20;
+    confidence = 50;
+  } else if (wasUpgraded) {
+    score = 0;
+    confidence = 100;
+  } else {
+    score = 0;
+    confidence = 100;
+  }
+  return {
+    score: normalizeScore(score, MAX_SCORES.HTTPS_ENFORCEMENT),
+    confidence
+  };
+}
+
+function calculateConnectionSecurityScore(isHTTPS, isValidCertificate) {
+  let score = 0, confidence = 100;
+  if (!isHTTPS) {
+    score = 10;
+    confidence = 0;
+  } else if (!isValidCertificate) {
+    score = 10;
+    confidence = 0;
+  } else {
+    score = 0;
+    confidence = 100;
+  }
+  return {
+    score: normalizeScore(score, MAX_SCORES.CONNECTION_SECURITY),
+    confidence
+  };
+}
+
+function calculateUrlScanScore(urlScanResult) {
+  if (!urlScanResult || urlScanResult.unavailable) {
+    return { score: 0, confidence: 0, available: false };
+  }
+  if (urlScanResult.result?.success && urlScanResult.result?.data) {
+    const isMalicious = urlScanResult.result.data.isMalicious;
+    if (isMalicious) {
+      return {
+        score: normalizeScore(100, MAX_SCORES.URLSCAN),
+        confidence: 100,
+        available: true
+      };
+      } else {
+      return { score: 0, confidence: 80, available: true };
+    }
+  }
+  return { score: 0, confidence: 0, available: false };
+}
+
+function calculateHeuristicsScore(anomalyScore, confidenceScore) {
+  return {
+    score: normalizeScore(anomalyScore, MAX_SCORES.HEURISTICS),
+    confidence: Math.max(0, Math.min(100, confidenceScore))
+  };
+}
+
+function calculateFinalScores(featureScores) {
+  const { heuristics, urlScan, httpsEnforcement, connectionSecurity } = featureScores;
+  let weightedThreatScore = 0, totalWeight = 0;
+  
+  // URLScan (only if available) - Most reliable signal (60%)
+  if (urlScan.available) {
+    weightedThreatScore += FEATURE_WEIGHTS.URLSCAN * urlScan.score;
+    totalWeight += FEATURE_WEIGHTS.URLSCAN;
+  }
+  
+  // Heuristics (always available) - Pattern-based analysis (25%)
+  weightedThreatScore += FEATURE_WEIGHTS.HEURISTICS * heuristics.score;
+  totalWeight += FEATURE_WEIGHTS.HEURISTICS;
+  
+  // HTTPS Enforcement (always available) - Binary check (15%)
+  weightedThreatScore += FEATURE_WEIGHTS.HTTPS_ENFORCEMENT * httpsEnforcement.score;
+  totalWeight += FEATURE_WEIGHTS.HTTPS_ENFORCEMENT;
+  
+  // Connection Security (not used in scoring - handled by browser)
+  // weightedThreatScore += FEATURE_WEIGHTS.CONNECTION_SECURITY * connectionSecurity.score;
+  // totalWeight += FEATURE_WEIGHTS.CONNECTION_SECURITY;
+  
+  const normalizedThreatScore = totalWeight > 0 ? weightedThreatScore / totalWeight : 0;
+  const finalThreatScore = Math.max(0, Math.min(100, normalizedThreatScore));
+  
+  let weightedConfidence = 0, confidenceWeight = 0;
+  
+  // URLScan confidence (only if available) - Most reliable signal (60%)
+  if (urlScan.available) {
+    weightedConfidence += FEATURE_WEIGHTS.URLSCAN * urlScan.confidence;
+    confidenceWeight += FEATURE_WEIGHTS.URLSCAN;
+  }
+  
+  // Heuristics confidence - Pattern-based analysis (25%)
+  weightedConfidence += FEATURE_WEIGHTS.HEURISTICS * heuristics.confidence;
+  confidenceWeight += FEATURE_WEIGHTS.HEURISTICS;
+  
+  // HTTPS Enforcement confidence - Binary check (15%)
+  weightedConfidence += FEATURE_WEIGHTS.HTTPS_ENFORCEMENT * httpsEnforcement.confidence;
+  confidenceWeight += FEATURE_WEIGHTS.HTTPS_ENFORCEMENT;
+  
+  // Connection Security confidence (not used in scoring)
+  // weightedConfidence += FEATURE_WEIGHTS.CONNECTION_SECURITY * connectionSecurity.confidence;
+  // confidenceWeight += FEATURE_WEIGHTS.CONNECTION_SECURITY;
+  
+  const normalizedConfidence = confidenceWeight > 0 ? weightedConfidence / confidenceWeight : 0;
+  const finalConfidenceScore = Math.max(0, Math.min(100, normalizedConfidence));
+  
+    return {
+    threatScore: Math.round(finalThreatScore * 100) / 100,
+    confidenceScore: Math.round(finalConfidenceScore * 100) / 100,
+    breakdown: {
+      urlScan: {
+        score: Math.round(urlScan.score * 100) / 100,
+        confidence: Math.round(urlScan.confidence * 100) / 100,
+        weight: FEATURE_WEIGHTS.URLSCAN,
+        available: urlScan.available
+      },
+      heuristics: {
+        score: Math.round(heuristics.score * 100) / 100,
+        confidence: Math.round(heuristics.confidence * 100) / 100,
+        weight: FEATURE_WEIGHTS.HEURISTICS
+      },
+      httpsEnforcement: {
+        score: Math.round(httpsEnforcement.score * 100) / 100,
+        confidence: Math.round(httpsEnforcement.confidence * 100) / 100,
+        weight: FEATURE_WEIGHTS.HTTPS_ENFORCEMENT
+      },
+      connectionSecurity: {
+        score: Math.round(connectionSecurity.score * 100) / 100,
+        confidence: Math.round(connectionSecurity.confidence * 100) / 100,
+        weight: FEATURE_WEIGHTS.CONNECTION_SECURITY
+      }
+    }
+  };
+}
+
+function determineSeverity(threatScore, confidenceScore) {
+  const adjustedScore = threatScore * (confidenceScore / 100);
+  if (adjustedScore >= 80 || (threatScore >= 90 && confidenceScore >= 60)) {
+    return 'critical';
+  }
+  if (adjustedScore >= 40 || (threatScore >= 50 && confidenceScore >= 40)) {
+    return 'warning';
+  }
+  return 'secure';
+}
+
+function calculateUnifiedScores(data) {
+  const {
+    heuristicsAnomalyScore = 0,
+    heuristicsConfidenceScore = 0,
+    urlScanResult = null,
+    httpsUpgraded = false,
+    isHTTPS = true,
+    isValidCertificate = true
+  } = data;
+  
+  const heuristics = calculateHeuristicsScore(heuristicsAnomalyScore, heuristicsConfidenceScore);
+  const urlScan = calculateUrlScanScore(urlScanResult);
+  const httpsEnforcement = calculateHttpsEnforcementScore(httpsUpgraded, isHTTPS);
+  const connectionSecurity = calculateConnectionSecurityScore(isHTTPS, isValidCertificate);
+  
+  const finalScores = calculateFinalScores({
+    heuristics,
+    urlScan,
+    httpsEnforcement,
+    connectionSecurity
+  });
+  
+  const severity = determineSeverity(finalScores.threatScore, finalScores.confidenceScore);
+  
+      return {
+    ...finalScores,
+    severity,
+    rawScores: {
+      heuristicsAnomalyScore,
+      heuristicsConfidenceScore
+    }
+  };
+}
+
 // Handle heuristics results from content script
 async function handleHeuristicsResults(results, sender) {
   const tabId = sender.tab?.id;
@@ -889,53 +1098,89 @@ async function handleHeuristicsResults(results, sender) {
     return;
   }
 
-  // Get URLScan result for this hostname and integrate it
+  // Get URLScan result for this hostname
   const hostname = new URL(sender.tab.url).hostname;
   const urlScanResult = await getUrlScanResult(hostname);
   
-  // Integrate URLScan results into heuristics
-  if (urlScanResult) {
-    integrateUrlScanResults(results, urlScanResult);
-  }
-
-  console.log('🔍 Processing heuristics for active tab:', {
-    tabId,
-    score: results.anomalyScore,
-    severity: results.severity,
-    externalPosts: results.externalPosts,
-    externalLinks: results.externalLinks,
-    urlScanStatus: urlScanResult ? (urlScanResult.unavailable ? 'unavailable' : 'available') : 'none'
+  // Get HTTPS upgrade status for this tab
+  const httpsUpgraded = tabUpgradeCounts.has(tabId) && tabUpgradeCounts.get(tabId) > 0;
+  const isHTTPS = sender.tab.url.startsWith('https://');
+  
+  // Check connection security (assume valid certificate if HTTPS)
+  // In Chrome MV3, we can't verify certificate details, so we assume valid if HTTPS
+  const isValidCertificate = isHTTPS; // Simplified for Chrome MV3
+  
+  // Calculate unified scores using mathematical scoring system
+  const unifiedScores = calculateUnifiedScores({
+    heuristicsAnomalyScore: results.anomalyScore || 0,
+    heuristicsConfidenceScore: results.confidenceScore || 0,
+    urlScanResult: urlScanResult || null,
+    httpsUpgraded,
+    isHTTPS,
+    isValidCertificate
+  });
+  
+  console.log('📊 Unified scoring results:', {
+    threatScore: unifiedScores.threatScore,
+    confidenceScore: unifiedScores.confidenceScore,
+    severity: unifiedScores.severity,
+    breakdown: unifiedScores.breakdown
   });
 
-  // Store heuristics results with tabId in key for easy filtering
+  // Store unified results with tabId in key for easy filtering
   const storageKey = `heuristics_${tabId}_${hostname}_${Date.now()}`;
 
   chrome.storage.local.set({
     [storageKey]: {
-      ...results,
+      // Keep original heuristics data for reference
+      anomalyScore: results.anomalyScore || 0,
+      confidenceScore: results.confidenceScore || 0,
+      detectedIssues: results.detectedIssues || [],
+      externalLinks: results.externalLinks || [],
+      externalPosts: results.externalPosts || [],
+      
+      // Unified scores (normalized 0-100)
+      threatScore: unifiedScores.threatScore,
+      confidenceScore: unifiedScores.confidenceScore,
+      severity: unifiedScores.severity,
+      
+      // Score breakdown for transparency
+      scoreBreakdown: unifiedScores.breakdown,
+      
+      // Metadata
       hostname,
       tabId,
       timestamp: Date.now(),
+      
+      // Feature status
       urlScan: urlScanResult ? {
         available: !urlScanResult.unavailable,
         malicious: urlScanResult.result?.data?.isMalicious || false,
         unavailable: urlScanResult.unavailable || false,
         message: urlScanResult.result?.message || urlScanResult.message
-      } : null
+      } : null,
+      httpsUpgraded,
+      isHTTPS,
+      isValidCertificate
     }
   });
 
   // Clean up old entries for this tab (keep only most recent)
   cleanupOldTabEntries(tabId);
 
-  // Update badge based on heuristics severity
-  updateBadgeFromHeuristics(tabId, results);
+  // Update badge based on unified severity (use threatScore for badge)
+  updateBadgeFromHeuristics(tabId, {
+    severity: unifiedScores.severity,
+    anomalyScore: unifiedScores.threatScore // Use unified threat score for badge
+  });
 
-  // Log critical threats (warnings shown in popup only, no full-screen interstitials)
-  if (results.severity === 'critical') {
-    console.log('🚨 CRITICAL heuristics detected!');
-    console.log('⚠️ Threat details:', results.detectedIssues);
-    // Warnings are shown in extension popup - no full-screen blocking
+  // Log critical threats
+  if (unifiedScores.severity === 'critical') {
+    console.log('🚨 CRITICAL threat detected!', {
+      threatScore: unifiedScores.threatScore,
+      confidenceScore: unifiedScores.confidenceScore,
+      issues: results.detectedIssues?.length || 0
+    });
   }
 }
 

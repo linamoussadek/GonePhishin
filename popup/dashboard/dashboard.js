@@ -97,6 +97,7 @@ function switchTab(tabName) {
 async function loadOverview() {
     try {
         await loadStatistics();
+        await loadProtectionStatus();
         await loadRecentActivityPreview();
     } catch (error) {
         console.error('Error loading overview:', error);
@@ -130,6 +131,43 @@ async function loadStatistics() {
         
     } catch (error) {
         console.error('Error loading statistics:', error);
+    }
+}
+
+async function loadProtectionStatus() {
+    try {
+        // Check URLScan.io status
+        const storageData = await chrome.storage.local.get();
+        const urlScanKeys = Object.keys(storageData).filter(key => key.startsWith('urlscan_'));
+        
+        let urlScanStatus = 'Checking...';
+        if (urlScanKeys.length > 0) {
+            // Get the most recent URLScan result
+            const latestKey = urlScanKeys.sort().pop();
+            const urlScanData = storageData[latestKey];
+            
+            if (urlScanData) {
+                if (urlScanData.unavailable) {
+                    urlScanStatus = 'Unavailable';
+                } else if (urlScanData.malicious) {
+                    urlScanStatus = 'Active';
+                } else {
+                    urlScanStatus = 'Active';
+                }
+            }
+        }
+        
+        const badge = document.getElementById('urlScanStatusBadge');
+        if (badge) {
+            badge.textContent = urlScanStatus;
+            if (urlScanStatus === 'Unavailable') {
+                badge.classList.remove('active');
+            } else {
+                badge.classList.add('active');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading protection status:', error);
     }
 }
 
@@ -174,7 +212,7 @@ async function loadRecentActivityPreview() {
                     <div class="activity-content">
                         <div class="activity-title">${data.hostname || 'Unknown'}</div>
                         <div class="activity-details">
-                            <span class="activity-score">Score: ${data.anomalyScore || 0}</span>
+                            <span class="activity-score">Score: ${data.threatScore !== undefined ? data.threatScore : (data.anomalyScore || 0)}</span>
                             <span class="activity-severity">${severity.toUpperCase()}</span>
                         </div>
                         <div class="activity-time">${getTimeAgo(data.timestamp)}</div>
@@ -215,7 +253,7 @@ async function loadHistory() {
             filtered = heuristicsKeys.filter(item => item.data.severity === 'warning');
         } else if (currentFilter === 'secure') {
             filtered = heuristicsKeys.filter(item => 
-                item.data.severity === 'secure' || (!item.data.severity && (item.data.anomalyScore || 0) < 20)
+                item.data.severity === 'secure' || (!item.data.severity && ((item.data.threatScore !== undefined ? item.data.threatScore : item.data.anomalyScore) || 0) < 20)
             );
         }
         
@@ -257,7 +295,7 @@ function displayHistory(items) {
                     <div class="history-header">
                         <div class="history-title">${data.hostname || 'Unknown'}</div>
                         <div class="history-meta">
-                            <span class="history-score">Score: ${data.anomalyScore || 0}</span>
+                            <span class="history-score">Score: ${data.threatScore !== undefined ? data.threatScore : (data.anomalyScore || 0)}</span>
                             <span class="history-severity">${severity.toUpperCase()}</span>
                         </div>
                     </div>

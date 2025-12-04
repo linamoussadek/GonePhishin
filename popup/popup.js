@@ -88,7 +88,7 @@ async function updatePopup() {
         updateSiteInfo('No active tab', 'Inactive');
         return;
     }
-    
+
     try {
         const url = new URL(currentTab.url);
         const hostname = url.hostname;
@@ -110,7 +110,7 @@ async function updatePopup() {
             updateUrlScanStatus(heuristicsData);
         } else {
             // No heuristics data yet - show initial state
-            updateAnomalyScore({ anomalyScore: 0, confidenceScore: 0, severity: 'secure' });
+            updateAnomalyScore({ threatScore: 0, confidenceScore: 0, severity: 'secure' });
             document.getElementById('siteStatus').textContent = 'No threats detected';
             document.getElementById('threatsSection').style.display = 'none';
             document.getElementById('urlScanItem').style.display = 'none';
@@ -154,8 +154,8 @@ async function getHeuristicsData(hostname) {
     });
     
     console.log('📊 Found heuristics keys for this tab:', heuristicsKeys.length);
-    
-    if (heuristicsKeys.length === 0) {
+        
+        if (heuristicsKeys.length === 0) {
         // Fallback: try to find any heuristics for this hostname (in case tab ID changed)
         const fallbackKeys = Object.keys(storageData).filter(key => {
             const data = storageData[key];
@@ -180,16 +180,17 @@ async function getHeuristicsData(hostname) {
     
     console.log('✅ Found heuristics data:', {
         key: recentKey.key,
-        score: storageData[recentKey.key].anomalyScore,
+        threatScore: storageData[recentKey.key].threatScore || storageData[recentKey.key].anomalyScore,
         severity: storageData[recentKey.key].severity
     });
     
     return storageData[recentKey.key];
 }
 
-// Update anomaly score display
+// Update anomaly score display (now uses unified threatScore)
 function updateAnomalyScore(data) {
-    const score = data.anomalyScore || 0;
+    // Support both unified threatScore and legacy anomalyScore
+    const score = data.threatScore !== undefined ? data.threatScore : (data.anomalyScore || 0);
     const confidence = data.confidenceScore || 0;
     const severity = data.severity || 'secure';
     

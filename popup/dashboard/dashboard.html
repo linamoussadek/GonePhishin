@@ -19,7 +19,7 @@
             </div>
             <nav class="nav-tabs">
                 <button class="nav-tab active" data-tab="overview">Overview</button>
-                <button class="nav-tab" data-tab="how-it-works">How It Works</button>
+                <button class="nav-tab" data-tab="features">Features</button>
                 <button class="nav-tab" data-tab="history">History</button>
                 <button class="nav-tab" data-tab="whitelist">Whitelist</button>
                 <button class="nav-tab" data-tab="transparency">Transparency</button>
@@ -32,22 +32,22 @@
         <!-- Overview Tab -->
         <section class="tab-content active" id="overviewTab">
             <!-- Quick Stats -->
-            <div class="stats-grid-simple">
-                <div class="stat-card-simple">
+            <div class="stats-grid">
+                <div class="stat-card">
                     <div class="stat-icon">🔒</div>
                     <div class="stat-content">
                         <div class="stat-value" id="totalUpgrades">0</div>
                         <div class="stat-label">HTTPS Upgrades</div>
                     </div>
                 </div>
-                <div class="stat-card-simple">
+                <div class="stat-card">
                     <div class="stat-icon">🚨</div>
                     <div class="stat-content">
                         <div class="stat-value" id="threatsDetected">0</div>
                         <div class="stat-label">Threats Detected</div>
                     </div>
                 </div>
-                <div class="stat-card-simple">
+                <div class="stat-card">
                     <div class="stat-icon">🛡️</div>
                     <div class="stat-content">
                         <div class="stat-value" id="sitesProtected">0</div>
@@ -61,22 +61,30 @@
                 <div class="section-header">
                     <h2>🛡️ Protection Status</h2>
                 </div>
-                <div class="protection-status-grid">
-                    <div class="protection-status-item active">
+                <div class="protection-grid">
+                    <div class="protection-card active">
                         <div class="protection-icon">🔒</div>
                         <div class="protection-info">
                             <h3>HTTPS Enforcement</h3>
-                            <p>Active - Automatically upgrades HTTP to HTTPS</p>
+                            <p>Automatically upgrades HTTP to HTTPS</p>
                         </div>
                         <div class="protection-badge active">Active</div>
                     </div>
-                    <div class="protection-status-item active">
+                    <div class="protection-card active">
                         <div class="protection-icon">🔍</div>
                         <div class="protection-info">
                             <h3>Heuristic Analysis</h3>
-                            <p>Active - Detecting phishing and suspicious behavior</p>
+                            <p>Detecting phishing and suspicious behavior</p>
                         </div>
                         <div class="protection-badge active">Active</div>
+                    </div>
+                    <div class="protection-card">
+                        <div class="protection-icon">🌐</div>
+                        <div class="protection-info">
+                            <h3>URLScan.io</h3>
+                            <p>URL reputation checking</p>
+                        </div>
+                        <div class="protection-badge" id="urlScanStatusBadge">Checking...</div>
                     </div>
                 </div>
             </section>
@@ -93,72 +101,338 @@
             </section>
         </section>
 
-        <!-- How It Works Tab -->
-        <section class="tab-content" id="how-it-worksTab">
+        <!-- Features Tab -->
+        <section class="tab-content" id="featuresTab">
             <section class="dashboard-section">
                 <div class="section-header">
-                    <h2>🎓 How Gone Phishin' Works</h2>
+                    <h2>✨ Extension Features</h2>
+                    <p class="section-description">Learn about all the security features that protect you while browsing</p>
                 </div>
                 
-                <div class="how-it-works-content">
-                    <div class="explanation-card">
-                        <div class="explanation-icon">🔒</div>
-                        <h3>1. HTTPS Enforcement</h3>
-                        <p><strong>Purpose:</strong> Prevents SSL stripping attacks by ensuring all connections use HTTPS.</p>
-                        <p><strong>How it works:</strong></p>
+                <!-- Important Disclaimer -->
+                <div class="disclaimer-box">
+                    <div class="disclaimer-icon">⚠️</div>
+                    <div class="disclaimer-content">
+                        <h3>Important</h3>
+                        <p>This extension supplements your browser's built-in security (Safe Browsing, certificate validation). It is not a replacement for:</p>
                         <ul>
-                            <li>Monitors all navigation requests in real-time</li>
-                            <li>Detects HTTP connections to HTTPS-capable sites</li>
-                            <li>Automatically redirects to HTTPS version</li>
-                            <li>Blocks mixed content (HTTP resources on HTTPS pages)</li>
-                        </ul>
-                        <p class="note"><strong>Note:</strong> Localhost URLs are excluded from automatic HTTPS upgrades for development purposes.</p>
-                    </div>
-
-                    <div class="explanation-card">
-                        <div class="explanation-icon">🔐</div>
-                        <h3>2. Connection Security Check</h3>
-                        <p><strong>Purpose:</strong> Verifies that sites use HTTPS with valid certificates.</p>
-                        <p><strong>How it works:</strong></p>
-                        <ul>
-                            <li>Checks if the connection uses HTTPS protocol</li>
-                            <li>Browser automatically validates certificates, checks expiration, and verifies CA trust</li>
-                            <li>Extension supplements browser security but does not replace it</li>
-                            <li><strong>Chrome MV3 Limitation:</strong> Advanced certificate monitoring (fingerprint tracking, issuer drift) requires Firefox MV2 version</li>
+                            <li>Chrome's Safe Browsing protection</li>
+                            <li>Careful URL inspection</li>
+                            <li>Password managers (best phishing defense)</li>
+                            <li>Common sense</li>
                         </ul>
                     </div>
-
-                    <div class="explanation-card">
-                        <div class="explanation-icon">🔍</div>
-                        <h3>3. Heuristic Analysis</h3>
-                        <p><strong>Purpose:</strong> Detects potential phishing and malicious websites using behavioral analysis.</p>
-                        <p><strong>What it analyzes:</strong></p>
-                        <ul>
-                            <li><strong>Form Submissions:</strong> Detects forms submitting to external domains (especially with password fields)</li>
-                            <li><strong>Link Patterns:</strong> Identifies suspicious external links and URL shorteners</li>
-                            <li><strong>Hidden Elements:</strong> Detects hidden iframes that may be used for tracking or data collection</li>
-                            <li><strong>Network Requests:</strong> Monitors POST requests to external domains for data exfiltration</li>
-                            <li><strong>Dynamic Changes:</strong> Watches for dynamically added malicious elements</li>
-                        </ul>
-                        <p><strong>Scoring System:</strong></p>
-                        <ul>
-                            <li><strong>CRITICAL (80+):</strong> Block/Warn - High-risk threats detected</li>
-                            <li><strong>WARNING (40-79):</strong> Notify User - Suspicious patterns detected</li>
-                            <li><strong>SECURE (0-39):</strong> Passive Logging - No significant threats</li>
-                        </ul>
-                        <p class="note"><strong>False Positive Reduction:</strong> Legitimate services (Stripe, PayPal, OAuth providers) are whitelisted to reduce false alarms.</p>
+                </div>
+                
+                
+                <div class="features-grid">
+                    <!-- HTTPS Enforcement -->
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <div class="feature-icon">🔒</div>
+                            <div class="browser-badges">
+                                <span class="browser-badge chrome">Chrome</span>
+                            </div>
+                        </div>
+                        <h3>HTTPS Enforcement</h3>
+                        <p class="feature-description">Automatically upgrades insecure HTTP connections to secure HTTPS, preventing SSL stripping attacks.</p>
+                        <div class="feature-details">
+                            <h4>How it works:</h4>
+                            <ul>
+                                <li>Monitors all navigation requests</li>
+                                <li>Detects HTTP connections</li>
+                                <li>Automatically redirects to HTTPS</li>
+                                <li>Blocks mixed content (HTTP resources on HTTPS pages)</li>
+                            </ul>
+                            <p class="feature-note"><strong>Note:</strong> Localhost URLs are excluded for development purposes.</p>
+                        </div>
                     </div>
 
-                    <div class="explanation-card">
-                        <div class="explanation-icon">🛡️</div>
-                        <h3>4. Protection Layers</h3>
-                        <p>The extension uses multiple layers of protection:</p>
+                    <!-- Heuristic Analysis -->
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <div class="feature-icon">🔍</div>
+                            <div class="browser-badges">
+                                <span class="browser-badge chrome">Chrome</span>
+                            </div>
+                        </div>
+                        <h3>Heuristic Analysis</h3>
+                        <p class="feature-description">Pattern-based content analysis that detects phishing attempts and suspicious behavior through pattern recognition.</p>
+                        <div class="feature-details">
+                            <h4>What it analyzes:</h4>
+                            <ul>
+                                <li><strong>Form Submissions:</strong> Detects forms submitting to external domains (especially password forms)</li>
+                                <li><strong>Link Patterns:</strong> Analyzes external links for suspicious patterns including:
+                                    <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+                                        <li>URL shorteners (bit.ly, tinyurl, etc.) - flags chains of multiple shorteners</li>
+                                        <li>Typosquatting indicators - lookalike characters, homograph attacks, very short domains</li>
+                                        <li>High-risk TLDs (.tk, .ml, .ga, .cf) - known for abuse</li>
+                                        <li>Clone patterns - detects when >70% of links point to a single external domain</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Network Requests:</strong> Monitors POST requests to external domains for data exfiltration</li>
+                            </ul>
+                            <h4>Scoring System:</h4>
+                            <ul>
+                                <li><strong>CRITICAL (80+):</strong> High-risk threats - Block/Warn</li>
+                                <li><strong>WARNING (40-79):</strong> Suspicious patterns - Notify User</li>
+                                <li><strong>SECURE (0-39):</strong> No significant threats - Passive Logging</li>
+                            </ul>
+                            <p class="feature-note"><strong>False Positive Reduction:</strong> Legitimate services (Stripe, PayPal, OAuth providers) are whitelisted.</p>
+                        </div>
+                    </div>
+
+                    <!-- URLScan.io Integration -->
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <div class="feature-icon">🌐</div>
+                            <div class="browser-badges">
+                                <span class="browser-badge chrome">Chrome</span>
+                            </div>
+                        </div>
+                        <h3>URLScan.io Integration</h3>
+                        <p class="feature-description">Optional URL reputation checking using URLScan.io API to verify if a URL has been flagged as malicious.</p>
+                        <div class="feature-details">
+                            <h4>How it works:</h4>
+                            <ul>
+                                <li>Submits URL to URLScan.io API when you visit a site</li>
+                                <li>Polls for scan results (takes ~10-30 seconds)</li>
+                                <li>If malicious: Adds +100 to anomaly score</li>
+                                <li>If safe: Increases confidence score</li>
+                            </ul>
+                            <h4>Status:</h4>
+                            <ul>
+                                <li><strong>Available:</strong> Backend is running, scans are performed</li>
+                                <li><strong>Unavailable:</strong> Backend not running - feature should be used when available</li>
+                            </ul>
+                            <p class="feature-note"><strong>Privacy:</strong> Only the URL is sent to URLScan.io. No personal data is transmitted.</p>
+                        </div>
+                    </div>
+
+                    <!-- Connection Security -->
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <div class="feature-icon">🔐</div>
+                            <div class="browser-badges">
+                                <span class="browser-badge firefox">Firefox</span>
+                            </div>
+                        </div>
+                        <h3>Connection Security Check</h3>
+                        <p class="feature-description">Verifies that sites use HTTPS with valid certificates validated by your browser.</p>
+                        <div class="feature-details">
+                            <h4>What it checks:</h4>
+                            <ul>
+                                <li>HTTPS protocol usage</li>
+                                <li>Browser certificate validation</li>
+                                <li>Certificate expiration</li>
+                                <li>Certificate authority trust</li>
+                            </ul>
+                            <p class="feature-note"><strong>Chrome MV3 Limitation:</strong> Advanced certificate monitoring (fingerprint tracking, issuer drift) requires Firefox MV2 version.</p>
+                        </div>
+                    </div>
+
+                    <!-- Real-time Monitoring -->
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <div class="feature-icon">⚡</div>
+                            <div class="browser-badges">
+                                <span class="browser-badge chrome">Chrome</span>
+                            </div>
+                        </div>
+                        <h3>Real-time Monitoring</h3>
+                        <p class="feature-description">Continuously monitors the active tab for security threats and updates the anomaly score in real-time.</p>
+                        <div class="feature-details">
+                            <h4>Features:</h4>
+                            <ul>
+                                <li>Focuses only on the active tab (better performance)</li>
+                                <li>Analyzes pages on initial load</li>
+                                <li>Updates popup in real-time</li>
+                                <li>Shows threat count and severity</li>
+                            </ul>
+                            <p class="feature-note">The extension analyzes pages as you browse and updates the popup automatically.</p>
+                        </div>
+                    </div>
+
+                    <!-- Whitelist Management -->
+                    <div class="feature-card">
+                        <div class="feature-header">
+                            <div class="feature-icon">✅</div>
+                            <div class="browser-badges">
+                                <span class="browser-badge chrome">Chrome</span>
+                            </div>
+                        </div>
+                        <h3>Whitelist Management</h3>
+                        <p class="feature-description">Manage trusted sites that should bypass security checks to reduce false positives.</p>
+                        <div class="feature-details">
+                            <h4>Use cases:</h4>
+                            <ul>
+                                <li>Trusted sites that trigger false positives</li>
+                                <li>Internal company websites</li>
+                                <li>Development/testing environments</li>
+                            </ul>
+                            <p class="feature-note">Whitelisted sites will bypass security checks. Use with caution.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scoring System Explanation -->
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>📐 Computing the Anomaly Score and Confidence Score</h2>
+                </div>
+                
+                <div class="scoring-explanation-content">
+                    <div class="scoring-intro">
+                        <p>The extension uses a unified mathematical scoring system that combines all security features into normalized threat and confidence scores. This ensures consistent, mathematically sound threat assessment.</p>
+                    </div>
+
+                    <div class="scoring-formula-card">
+                        <h3>📊 Final Threat Score Formula</h3>
+                        <div class="formula-box">
+                            <code>Final Threat Score = min(100, Σ(weight_i × normalized_score_i))</code>
+                        </div>
+                        <p class="formula-explanation">
+                            The final threat score is calculated by:
+                        </p>
                         <ol>
-                            <li><strong>Prevention:</strong> HTTPS enforcement prevents downgrade attacks</li>
-                            <li><strong>Detection:</strong> Heuristic analysis identifies suspicious behavior</li>
-                            <li><strong>Notification:</strong> Users are alerted to potential threats via the extension popup</li>
-                            <li><strong>Transparency:</strong> All detections are logged for review in the History tab</li>
+                            <li>Normalizing each feature's raw score to 0-100 range using min-max normalization</li>
+                            <li>Multiplying each normalized score by its feature weight</li>
+                            <li>Summing all weighted scores</li>
+                            <li>Clamping the result to [0, 100]</li>
                         </ol>
+                    </div>
+
+                    <div class="scoring-formula-card">
+                        <h3>🎯 Final Confidence Score Formula</h3>
+                        <div class="formula-box">
+                            <code>Final Confidence Score = Σ(weight_i × confidence_i)</code>
+                        </div>
+                        <p class="formula-explanation">
+                            The confidence score represents how certain we are about the threat assessment:
+                        </p>
+                        <ol>
+                            <li>Each feature contributes a confidence value (0-100)</li>
+                            <li>Confidences are weighted by their feature weights</li>
+                            <li>Weighted confidences are summed and normalized</li>
+                            <li>Result is clamped to [0, 100]</li>
+                        </ol>
+                    </div>
+
+                    <div class="feature-weights-card">
+                        <h3>⚖️ Feature Weights</h3>
+                        <p>Each security feature is assigned a weight based on its importance and reliability:</p>
+                        <div class="weights-grid">
+                            <div class="weight-item">
+                                <div class="weight-feature">URLScan.io</div>
+                                <div class="weight-value">60%</div>
+                                <div class="weight-description">Most reliable signal when available - external threat intelligence</div>
+                            </div>
+                            <div class="weight-item">
+                                <div class="weight-feature">Heuristics Analysis</div>
+                                <div class="weight-value">25%</div>
+                                <div class="weight-description">Pattern-based analysis - always available, detects behavioral patterns</div>
+                            </div>
+                            <div class="weight-item">
+                                <div class="weight-feature">HTTPS Enforcement</div>
+                                <div class="weight-value">15%</div>
+                                <div class="weight-description">Important but binary - either upgraded or not</div>
+                            </div>
+                            <div class="weight-item">
+                                <div class="weight-feature">Connection Security</div>
+                                <div class="weight-value">0%</div>
+                                <div class="weight-description">Not used in scoring - handled by browser's built-in security</div>
+                            </div>
+                        </div>
+                        <p class="weight-note"><strong>Note:</strong> Weights sum to 100%. If URLScan.io is unavailable, its weight is redistributed proportionally to other features.</p>
+                    </div>
+
+                    <div class="normalization-card">
+                        <h3>📏 Score Normalization</h3>
+                        <p>Each feature's raw score is normalized to a 0-100 scale using min-max normalization:</p>
+                        <div class="formula-box">
+                            <code>normalized_score = (raw_score / max_possible_score) × 100</code>
+                        </div>
+                        <div class="max-scores-table">
+                            <h4>Maximum Possible Scores:</h4>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Feature</th>
+                                        <th>Max Raw Score</th>
+                                        <th>Normalized Max</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Heuristics Analysis</td>
+                                        <td>200</td>
+                                        <td>100</td>
+                                    </tr>
+                                    <tr>
+                                        <td>URLScan.io</td>
+                                        <td>100</td>
+                                        <td>100</td>
+                                    </tr>
+                                    <tr>
+                                        <td>HTTPS Enforcement</td>
+                                        <td>20</td>
+                                        <td>100</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Connection Security</td>
+                                        <td>10</td>
+                                        <td>100</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="severity-card">
+                        <h3>🚨 Severity Determination</h3>
+                        <p>Severity is determined using a confidence-adjusted score:</p>
+                        <div class="formula-box">
+                            <code>adjusted_score = threat_score × (confidence_score / 100)</code>
+                        </div>
+                        <div class="severity-thresholds">
+                            <div class="threshold-item critical">
+                                <strong>CRITICAL:</strong> adjusted_score ≥ 80 OR (threat_score ≥ 90 AND confidence_score ≥ 60)
+                            </div>
+                            <div class="threshold-item warning">
+                                <strong>WARNING:</strong> adjusted_score ≥ 40 OR (threat_score ≥ 50 AND confidence_score ≥ 40)
+                            </div>
+                            <div class="threshold-item secure">
+                                <strong>SECURE:</strong> All other cases
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="example-card">
+                        <h3>💡 Example Calculation</h3>
+                        <p>Let's say a website has:</p>
+                        <ul>
+                            <li>URLScan: malicious (normalized: 100), confidence = 100%</li>
+                            <li>Heuristics: raw score = 150 (normalized: 75), confidence = 80%</li>
+                            <li>HTTPS: upgraded (normalized: 0), confidence = 100%</li>
+                        </ul>
+                        <div class="calculation-steps">
+                            <div class="step">
+                                <strong>Step 1:</strong> Calculate weighted threat score
+                                <code>0.60×100 + 0.25×75 + 0.15×0 = 60 + 18.75 + 0 = 78.75</code>
+                            </div>
+                            <div class="step">
+                                <strong>Step 2:</strong> Calculate weighted confidence
+                                <code>0.60×100 + 0.25×80 + 0.15×100 = 60 + 20 + 15 = 95</code>
+                            </div>
+                            <div class="step">
+                                <strong>Step 3:</strong> Calculate adjusted score
+                                <code>78.75 × (95/100) = 78.75 × 0.95 = 74.81</code>
+                            </div>
+                            <div class="step">
+                                <strong>Result:</strong> <strong class="warning-result">WARNING</strong> (adjusted_score = 74.81, threat_score = 78.75 ≥ 50)
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -297,7 +571,7 @@
                                 <li>What external services are called</li>
                                 <li>How the heuristic analysis works</li>
                             </ul>
-                            <p class="note"><strong>Academic Project:</strong> This extension was developed as an academic capstone project. All code is available for review.</p>
+                            <p class="feature-note"><strong>Academic Project:</strong> This extension was developed as an academic capstone project. All code is available for review.</p>
                         </div>
                     </div>
                 </div>

@@ -77,12 +77,8 @@ async function initHeuristics() {
   // Run all heuristics
   checkFormSubmissions();
   checkExternalLinks();
-  checkHiddenIframes();
   interceptNetworkRequests();
   analyzeLinkPatterns();
-  
-  // Monitor for dynamic changes
-  setupMutationObserver();
   
   // Collect results
   const results = compileResults();
@@ -217,10 +213,10 @@ function checkFormSubmissions() {
   });
 }
 
-// Extract all external links and analyze their domains
+// Extract all external links and analyze their domains (refined for link patterns)
 function checkExternalLinks() {
   const links = document.querySelectorAll('a[href]');
-  console.log(`🔍 Checking ${links.length} links for external domains`);
+  console.log(`🔍 Checking ${links.length} links for suspicious patterns`);
   
   links.forEach(link => {
     const href = link.getAttribute('href');
@@ -236,13 +232,16 @@ function checkExternalLinks() {
           isVisible: isElementVisible(link)
         });
         
-        // Check for suspicious patterns
+        // Only flag suspicious domains (URL shorteners, high-risk TLDs, typosquatting)
         if (isSuspiciousDomain(linkUrl.hostname)) {
-          anomalyScore += 20;
+          // Reduced score - link patterns are analyzed in analyzeLinkPatterns()
+          anomalyScore += 10;
+          confidenceScore += 5;
           detectedIssues.push({
             type: 'suspicious_link',
             severity: 'warning',
-            message: `Suspicious external link: ${linkUrl.hostname}`
+            message: `Suspicious external link: ${linkUrl.hostname}`,
+            confidence: 30
           });
         }
       }
@@ -251,39 +250,34 @@ function checkExternalLinks() {
     }
   });
   
-  // Analyze link patterns
+  // Analyze link patterns (clone detection, URL shortener chains, typosquatting)
   analyzeLinkPatterns();
 }
 
-// Check for suspicious domain patterns (improved to reduce false positives)
+// Check for suspicious domain patterns (refined for link pattern analysis)
 function isSuspiciousDomain(hostname) {
   // Skip legitimate services
   if (isLegitimateExternalService(hostname)) return false;
   
-  // Check for high-risk TLDs
+  // Check for high-risk TLDs (known for abuse)
   const hasHighRiskTld = HIGH_RISK_TLDS.some(tld => hostname.endsWith(tld));
   
-  // Check for URL shorteners (only flag if not from known good domains)
-  const isUrlShortener = /bit\.ly|tinyurl|goo\.gl|t\.co|ow\.ly|short\.link/gi.test(hostname);
+  // Check for URL shorteners (potential obfuscation)
+  const isUrlShortener = /bit\.ly|tinyurl|goo\.gl|t\.co|ow\.ly|short\.link|tiny\.cc|is\.gd|buff\.ly/gi.test(hostname);
   
-  // Check for very short domains (potential typosquatting)
+  // Check for typosquatting indicators:
+  // - Very short domains with high-risk TLDs
+  // - Homograph attacks (mixed scripts, lookalike characters)
   const isVeryShort = /^[a-z0-9-]{1,8}\.[a-z]{2,3}$/gi.test(hostname);
-  
-  // Check for homograph attacks (mixed scripts, lookalike characters)
   const hasMixedScripts = /[а-яё]/gi.test(hostname) || /[α-ω]/gi.test(hostname);
+  const hasLookalikeChars = /[0-9]/.test(hostname) && /[oOlI1]/.test(hostname); // 0/O, 1/l/I confusion
   
-  return hasHighRiskTld || (isUrlShortener && !isLegitimateExternalService(hostname)) || 
-         (isVeryShort && hasHighRiskTld) || hasMixedScripts;
+  // Flag if: high-risk TLD, URL shortener, or typosquatting indicators
+  return hasHighRiskTld || isUrlShortener || (isVeryShort && hasHighRiskTld) || hasMixedScripts || hasLookalikeChars;
 }
 
-// Check for hidden external iframes (removed - too many false positives)
-// Hidden iframes are commonly used for analytics, tracking, and legitimate embeds
-function checkHiddenIframes() {
-  // Disabled: Hidden iframes are not a reliable indicator of phishing
-  // Many legitimate sites use hidden iframes for analytics, social widgets, etc.
-  // This check produced too many false positives
-  return;
-}
+// Removed: checkHiddenIframes() - Hidden iframes are not a reliable indicator of phishing
+// Many legitimate sites use hidden iframes for analytics, social widgets, etc.
 
 // Intercept network requests to detect POST exfiltration (improved)
 function interceptNetworkRequests() {
@@ -396,7 +390,7 @@ function containsSensitiveData(str) {
   return sensitivePatterns.some(pattern => lower.includes(pattern));
 }
 
-// Analyze link patterns for anomalies (improved)
+// Analyze link patterns for anomalies (refined for typosquatting and clone detection)
 function analyzeLinkPatterns() {
   if (externalLinks.length === 0) return;
   
@@ -414,9 +408,9 @@ function analyzeLinkPatterns() {
   });
   
   const totalLinks = document.querySelectorAll('a[href]').length;
-  const suspiciousLinkCount = suspiciousLinks.length;
   
-  // Only flag if > 70% of links go to single external domain (clone indicator)
+  // CRITICAL: Clone pattern detection - >70% of links point to single external domain
+  // This indicates a full-site clone/phishing attempt
   Object.entries(domainCounts).forEach(([domain, count]) => {
     const percentage = (count / totalLinks) * 100;
     if (percentage > 70 && count > 5) {
@@ -426,21 +420,18 @@ function analyzeLinkPatterns() {
       detectedIssues.push({
         type: 'link_clone_pattern',
         severity: 'critical',
-        message: `${count} links (${percentage.toFixed(1)}%) point to ${domain}`,
+        message: `${count} links (${percentage.toFixed(1)}%) point to ${domain} - possible site clone`,
         confidence: 85
       });
-    } else if (count > 10) {
-      console.log(`ℹ️ Multiple links to external domain: ${domain} (${count} links)`);
-      // Don't add to score, just informational
     }
   });
   
-  // Check for URL shortener chains (more suspicious than single shortener)
+  // WARNING: URL shortener chains - multiple different shortener services
+  // Indicates potential obfuscation of malicious URLs
   const shortenedLinks = suspiciousLinks.filter(link => 
-    /bit\.ly|tinyurl|goo\.gl|t\.co|ow\.ly|short\.link/gi.test(link.url)
+    /bit\.ly|tinyurl|goo\.gl|t\.co|ow\.ly|short\.link|tiny\.cc|is\.gd|buff\.ly/gi.test(link.url)
   );
   
-  // Only flag if multiple different shorteners (potential obfuscation)
   const uniqueShorteners = new Set(shortenedLinks.map(l => l.domain));
   if (uniqueShorteners.size > 2) {
     console.warn(`⚠️ Multiple URL shorteners detected: ${uniqueShorteners.size} different services`);
@@ -449,183 +440,107 @@ function analyzeLinkPatterns() {
     detectedIssues.push({
       type: 'url_shortener_chain',
       severity: 'warning',
-      message: `Multiple URL shorteners detected (${uniqueShorteners.size} different services)`,
+      message: `Multiple URL shorteners detected (${uniqueShorteners.size} different services) - potential obfuscation`,
       confidence: 50
     });
   }
-}
-
-// Setup MutationObserver to watch for dynamic changes
-function setupMutationObserver() {
-  let debounceTimer = null;
   
-  const observer = new MutationObserver(mutations => {
-    // Debounce rapid changes - re-analyze after DOM settles
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      console.log('🔄 DOM changed - re-running heuristics analysis...');
-      // Reset scores and re-run full analysis
-      anomalyScore = 0;
-      confidenceScore = 0;
-      detectedIssues = [];
-      externalLinks = [];
-      externalPosts = [];
-      
-      // Re-run all checks (background will filter by active tab)
-      checkFormSubmissions();
-      checkExternalLinks();
-      checkHiddenIframes();
-      interceptNetworkRequests();
-      analyzeLinkPatterns();
-      
-      // Report updated results
-      const results = compileResults();
-      reportToBackground(results);
-    }, 300); // Wait 300ms for DOM to settle
+  // Check for typosquatting patterns
+  // Look for domains that are very similar to the current domain
+  const currentDomain = location.hostname.toLowerCase();
+  const currentDomainParts = currentDomain.split('.');
+  const currentBaseDomain = currentDomainParts.length > 1 
+    ? currentDomainParts.slice(-2).join('.') 
+    : currentDomain;
+  
+  suspiciousLinks.forEach(link => {
+    const linkDomain = link.domain.toLowerCase();
+    const linkDomainParts = linkDomain.split('.');
+    const linkBaseDomain = linkDomainParts.length > 1 
+      ? linkDomainParts.slice(-2).join('.') 
+      : linkDomain;
     
-    // Also handle immediate form/link additions
-    mutations.forEach(mutation => {
-      mutation.addedNodes.forEach(node => {
-        if (node.nodeType === 1) { // Element node
-          if (node.tagName === 'FORM') {
-            // New form added dynamically
-            const action = node.getAttribute('action') || '';
-            try {
-              const formUrl = new URL(action, location.origin);
-              if (formUrl.origin !== location.origin && !isLegitimateExternalService(formUrl.hostname)) {
-                const hasPassword = node.querySelector('input[type="password"]');
-                const hasPaymentFields = node.querySelector('input[name*="card"], input[name*="cvv"], input[name*="cvc"]');
-                const style = window.getComputedStyle(node);
-                const isHidden = style.display === 'none' || style.visibility === 'hidden';
-                
-                // Only flag if hidden with password/payment or different TLD
-                if (hasPassword || hasPaymentFields) {
-                  const currentTld = location.hostname.split('.').slice(-2).join('.');
-                  const formTld = formUrl.hostname.split('.').slice(-2).join('.');
-                  
-                  if (currentTld !== formTld) {
-                    console.warn(`🚨 Dynamic password/payment form to different TLD: ${formUrl.hostname}`);
-                    anomalyScore += 80;
-                    confidenceScore += 60;
-                    detectedIssues.push({
-                      type: 'password_external_different_tld',
-                      severity: 'critical',
-                      message: `Password/payment form submits to ${formUrl.hostname} (different TLD)`,
-                      confidence: 85
-                    });
-                  } else if (isHidden && (hasPassword || hasPaymentFields)) {
-                    console.warn(`🚨 Hidden form with sensitive fields: ${formUrl.hostname}`);
-                    anomalyScore += 50;
-                    confidenceScore += 70;
-                    detectedIssues.push({
-                      type: 'hidden_sensitive_form',
-                      severity: 'warning',
-                      message: `Hidden form with ${hasPassword ? 'password' : 'payment'} fields submits to ${formUrl.hostname}`,
-                      confidence: 70
-                    });
-                  }
-                }
-              }
-            } catch (e) {}
-          } else if (node.tagName === 'A' && node.hasAttribute('href')) {
-            // New link added dynamically
-            const href = node.getAttribute('href');
-            try {
-              const linkUrl = new URL(href, location.origin);
-              if (linkUrl.origin !== location.origin && 
-                  isSuspiciousDomain(linkUrl.hostname) && 
-                  !isLegitimateExternalService(linkUrl.hostname)) {
-                console.log(`ℹ️ Dynamic suspicious link: ${linkUrl.hostname}`);
-                anomalyScore += 10;
-                confidenceScore += 5;
-                detectedIssues.push({
-                  type: 'suspicious_link',
-                  severity: 'warning',
-                  message: `Suspicious external link: ${linkUrl.hostname}`,
-                  confidence: 30
-                });
-              }
-            } catch (e) {}
-          }
-        }
-      });
-    });
-  });
-  
-  observer.observe(document.body, { 
-    childList: true, 
-    subtree: true,
-    attributes: true, // Also watch for attribute changes (like form action)
-    attributeFilter: ['action', 'href'], // Only watch relevant attributes
-    characterData: false
-  });
-  
-  // Also handle attribute changes (form action changes)
-  const attributeObserver = new MutationObserver(mutations => {
-    let shouldReanalyze = false;
-    
-    mutations.forEach(mutation => {
-      if (mutation.type === 'attributes') {
-        const target = mutation.target;
-        if (target.tagName === 'FORM' && mutation.attributeName === 'action') {
-          console.log('🔄 Form action changed - triggering re-analysis');
-          shouldReanalyze = true;
-        } else if (target.tagName === 'A' && mutation.attributeName === 'href') {
-          console.log('🔄 Link href changed - triggering re-analysis');
-          shouldReanalyze = true;
-        }
+    // Check for typosquatting: similar domain name but different TLD or slight variations
+    if (linkBaseDomain !== currentBaseDomain && 
+        linkBaseDomain.length > 0 && 
+        currentBaseDomain.length > 0) {
+      // Calculate similarity (simple Levenshtein-like check)
+      const similarity = calculateDomainSimilarity(currentBaseDomain, linkBaseDomain);
+      
+      // Flag if domain is very similar (>80% similarity) but different
+      if (similarity > 0.8 && similarity < 1.0) {
+        console.warn(`⚠️ Possible typosquatting: ${linkBaseDomain} similar to ${currentBaseDomain} (${(similarity * 100).toFixed(0)}% similar)`);
+        anomalyScore += 30;
+        confidenceScore += 25;
+        detectedIssues.push({
+          type: 'typosquatting',
+          severity: 'warning',
+          message: `Suspicious domain similar to current site: ${linkBaseDomain}`,
+          confidence: 60
+        });
       }
-    });
-    
-    if (shouldReanalyze) {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        console.log('🔄 Attributes changed - re-running heuristics analysis...');
-        anomalyScore = 0;
-        confidenceScore = 0;
-        detectedIssues = [];
-        externalLinks = [];
-        externalPosts = [];
-        
-        checkFormSubmissions();
-        checkExternalLinks();
-        checkHiddenIframes();
-        interceptNetworkRequests();
-        analyzeLinkPatterns();
-        
-        const results = compileResults();
-        reportToBackground(results);
-      }, 300);
     }
   });
-  
-  attributeObserver.observe(document.body, {
-    attributes: true,
-    attributeFilter: ['action', 'href'],
-    subtree: true
-  });
-  
-  // Also listen for custom trigger events
-  window.addEventListener('heuristics-trigger', () => {
-    console.log('🔄 Manual heuristics trigger received');
-    setTimeout(() => {
-      anomalyScore = 0;
-      confidenceScore = 0;
-      detectedIssues = [];
-      externalLinks = [];
-      externalPosts = [];
-      
-      checkFormSubmissions();
-      checkExternalLinks();
-      checkHiddenIframes();
-      interceptNetworkRequests();
-      analyzeLinkPatterns();
-      
-      const results = compileResults();
-      reportToBackground(results);
-    }, 100);
-  });
 }
+
+// Calculate domain similarity (0-1 scale)
+function calculateDomainSimilarity(domain1, domain2) {
+  // Remove TLD for comparison
+  const d1 = domain1.split('.').slice(0, -1).join('.');
+  const d2 = domain2.split('.').slice(0, -1).join('.');
+  
+  if (d1 === d2) return 1.0;
+  if (d1.length === 0 || d2.length === 0) return 0;
+  
+  // Simple character overlap check
+  const longer = d1.length > d2.length ? d1 : d2;
+  const shorter = d1.length > d2.length ? d2 : d1;
+  
+  let matches = 0;
+  for (let i = 0; i < shorter.length; i++) {
+    if (longer.includes(shorter[i])) matches++;
+  }
+  
+  // Also check for common substrings
+  let maxCommonSubstring = 0;
+  for (let i = 0; i < shorter.length; i++) {
+    for (let j = i + 1; j <= shorter.length; j++) {
+      const substr = shorter.substring(i, j);
+      if (longer.includes(substr) && substr.length > maxCommonSubstring) {
+        maxCommonSubstring = substr.length;
+      }
+    }
+  }
+  
+  // Combine character overlap and common substring
+  const charSimilarity = matches / longer.length;
+  const substringSimilarity = maxCommonSubstring / longer.length;
+  
+  return Math.max(charSimilarity, substringSimilarity);
+}
+
+// Removed: setupMutationObserver() - Dynamic DOM change monitoring removed
+// The extension now analyzes pages on initial load only for better performance and fewer false positives
+
+// Listen for custom trigger events (for manual re-analysis)
+window.addEventListener('heuristics-trigger', () => {
+  console.log('🔄 Manual heuristics trigger received');
+  setTimeout(() => {
+    anomalyScore = 0;
+    confidenceScore = 0;
+    detectedIssues = [];
+    externalLinks = [];
+    externalPosts = [];
+    
+    checkFormSubmissions();
+    checkExternalLinks();
+    interceptNetworkRequests();
+    analyzeLinkPatterns();
+    
+    const results = compileResults();
+    reportToBackground(results);
+  }, 100);
+});
 
 // Helper to check if element is visible
 function isElementVisible(element) {
