@@ -49,6 +49,6 @@ build/
 *-dev.*
 
 # Test site files (if temporary)
-phishing-test-site.html
-serve-test-site.js
+# phishing-test-site.html  # Keep for testing
+# serve-test-site.js       # Keep for testing
 

