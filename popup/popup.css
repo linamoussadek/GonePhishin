@@ -282,6 +282,18 @@ html, body {
     font-weight: 500;
 }
 
+.info-value.warning {
+    color: var(--warning);
+}
+
+.info-value.critical {
+    color: var(--danger);
+}
+
+.info-value.secure {
+    color: var(--success);
+}
+
 /* Actions */
 .actions {
     display: flex;

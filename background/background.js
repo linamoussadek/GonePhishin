@@ -211,61 +211,187 @@ async function pollScanResult(uuid) {
 // unsuccessful scan returns {success: false, message: <msg>}
 // successful scan returns {success: true, message: "Scan successful", data: {isMalicious: <boolean>} }
 async function urlScan(url) {
-  const submission = await submitScanToBackend(url);
+  try {
+    const submission = await submitScanToBackend(url);
 
-  if (!submission.success) {
-    console.warn("Problem submitting scan:", submission.message);
-    return { success: false, message: submission.message };
-  }
+    if (!submission.success) {
+      console.warn("Problem submitting scan:", submission.message);
+      // Store unavailable status
+      const unavailableResult = { 
+        success: false, 
+        unavailable: true,
+        message: submission.message || "URLScan backend unavailable"
+      };
+      storeUrlScanResult(url, unavailableResult);
+      
+      // Send message about unavailability
+      chrome.runtime.sendMessage({
+        type: "URL_SCAN_RESULT",
+        url,
+        result: unavailableResult
+      });
+      
+      return unavailableResult;
+    }
 
-  // Send failure JSON to popup as well
+    // wait before polling
+    await new Promise((r) => setTimeout(r, 10000));
+
+    // get polling result
+    const poll = await pollScanResult(submission.data.uuid);
+    console.log("polling result", poll);
+    
+    if (!poll.success) {
+      console.warn(poll.message);
+      // Store unavailable status
+      const unavailableResult = { 
+        success: false, 
+        unavailable: true,
+        message: poll.message || "URLScan polling failed"
+      };
+      storeUrlScanResult(url, unavailableResult);
+      
+      chrome.runtime.sendMessage({
+        type: "URL_SCAN_RESULT",
+        url,
+        result: unavailableResult
+      });
+      
+      return unavailableResult;
+    }
+
+    const result = poll.data;
+    const hasVerdicts = result.verdicts?.overall?.hasVerdicts;
+    
+    if (!hasVerdicts) {
+      console.log("Unable to verify URL (no verdict)");
+      const noVerdictResult = { 
+        success: false, 
+        unavailable: false,
+        message: "We couldn't verify this URL."
+      };
+      storeUrlScanResult(url, noVerdictResult);
+      
+      chrome.runtime.sendMessage({
+        type: "URL_SCAN_RESULT",
+        url,
+        result: noVerdictResult
+      });
+      
+      return noVerdictResult;
+    }
+
+    console.log("malicious:", result.verdicts.overall.malicious);
+    
+    const scanResult = { 
+      success: true, 
+      message: "Scan successful", 
+      data: { 
+        isMalicious: result.verdicts.overall.malicious,
+        verdicts: result.verdicts,
+        timestamp: Date.now()
+      } 
+    };
+    
+    // Store URLScan result
+    storeUrlScanResult(url, scanResult);
+    
+    // Send result to popup
     chrome.runtime.sendMessage({
       type: "URL_SCAN_RESULT",
       url,
-      result: submission
+      result: scanResult
     });
-
-  // wait before polling
-  await new Promise((r) => setTimeout(r, 10000));
-
-  // get polling result
-  const poll = await pollScanResult(submission.data.uuid);
-  console.log("polling result", poll);
-  if (!poll.success) {
-    console.warn(poll.message);
-    return { success: false, message: poll.message };
-  }
-
-  const result = poll.data;
-  const hasVerdicts = result.verdicts?.overall?.hasVerdicts
-  if (!hasVerdicts) {
-    console.log("Unable to verify URL (no verdict)")
-    return {  // either return an error or return null
-      success: false,
-      message: "We couldn’t verify this URL."
+    
+    return scanResult;
+  } catch (error) {
+    console.error("URLScan error:", error);
+    const errorResult = { 
+      success: false, 
+      unavailable: true,
+      message: error.message || "URLScan service error"
     };
+    storeUrlScanResult(url, errorResult);
+    
+    chrome.runtime.sendMessage({
+      type: "URL_SCAN_RESULT",
+      url,
+      result: errorResult
+    });
+    
+    return errorResult;
   }
+};
 
-  // Send result to popup
-  chrome.runtime.sendMessage({
-    type: "URL_SCAN_RESULT",
-    url,
-    result: poll
-  }); 
+// Store URLScan result for later use in heuristics
+function storeUrlScanResult(url, result) {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname;
+    const urlScanKey = `urlscan_${hostname}`;
+    
+    chrome.storage.local.set({
+      [urlScanKey]: {
+        url,
+        hostname,
+        result,
+        timestamp: Date.now()
+      }
+    });
+    
+    console.log('💾 Stored URLScan result for', hostname, result);
+  } catch (error) {
+    console.error('Error storing URLScan result:', error);
+  }
+}
 
-  console.log("malicious:", result.verdicts.overall.malicious);
-  return { success: true, message: "Scan successful", data: { isMalicious: result.verdicts.overall.malicious } };
-}; 
+// Handle URLScan result messages
+function handleUrlScanResult(url, result) {
+  console.log('📡 URLScan result received:', url, result);
+  
+  // Store the result
+  storeUrlScanResult(url, result);
+  
+  // If malicious, we should trigger a re-analysis or update threat level
+  if (result.success && result.data?.isMalicious) {
+    console.log('🚨 URLScan detected malicious URL:', url);
+    // The heuristics engine will pick this up on next analysis
+  } else if (!result.success) {
+    // Backend unavailable or error
+    console.log('⚠️ URLScan unavailable or error:', result.message);
+    // Store as unavailable so UI can show it
+    storeUrlScanResult(url, {
+      success: false,
+      unavailable: true,
+      message: result.message || 'URLScan service unavailable'
+    });
+  }
+} 
 
 
-// atm it's only working when you open a new tab or if you're on an existing tab and go to a new website
+// Trigger URLScan when navigating to a new URL (only for active tab)
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   const url = changeInfo.url;
-  // avoid google login redirect link as well
+  // Skip chrome://, about://, chrome-extension:// URLs
   if (!url || ['chrome://', 'about://', 'chrome-extension://'].some(p => url.startsWith(p))) return;
-  if (!tab.active) return; // revisit
-  console.log(url);
-  await urlScan(url);
+  // Only scan active tabs
+  if (!tab.active) return;
+  
+  // Only scan on URL change (not on status changes)
+  if (!changeInfo.url) return;
+  
+  console.log('🔍 Triggering URLScan for:', url);
+  
+  // Run URLScan in background (don't await - let it run async)
+  urlScan(url).then(result => {
+    if (result.success) {
+      console.log('✅ URLScan completed:', result.data?.isMalicious ? 'MALICIOUS' : 'SAFE');
+    } else {
+      console.log('⚠️ URLScan unavailable:', result.message);
+    }
+  }).catch(error => {
+    console.error('❌ URLScan error:', error);
+  });
 });
 
 /* -------------------- end of urlscan code -------------------- *
@@ -690,8 +816,24 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   } else if (request.action === 'getTabId') {
     // Return the sender's tab ID
     sendResponse({ tabId: sender.tab?.id });
+  } else if (request.action === 'getUrlScanResult') {
+    // Get URLScan result for a hostname
+    const hostname = request.hostname;
+    const storageData = await chrome.storage.local.get();
+    const urlScanKey = `urlscan_${hostname}`;
+    const urlScanResult = storageData[urlScanKey];
+    sendResponse({ urlScanResult });
   }
   return true; // Keep channel open for async responses
+});
+
+// Handle URLScan results
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'URL_SCAN_RESULT') {
+    handleUrlScanResult(message.url, message.result);
+    sendResponse({ success: true });
+  }
+  return true;
 });
 
 // --- Heuristics Integration ---
@@ -728,7 +870,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 });
 
 // Handle heuristics results from content script
-function handleHeuristicsResults(results, sender) {
+async function handleHeuristicsResults(results, sender) {
   const tabId = sender.tab?.id;
   if (!tabId) {
     console.log('No tab ID for heuristics results');
@@ -747,16 +889,25 @@ function handleHeuristicsResults(results, sender) {
     return;
   }
 
+  // Get URLScan result for this hostname and integrate it
+  const hostname = new URL(sender.tab.url).hostname;
+  const urlScanResult = await getUrlScanResult(hostname);
+  
+  // Integrate URLScan results into heuristics
+  if (urlScanResult) {
+    integrateUrlScanResults(results, urlScanResult);
+  }
+
   console.log('🔍 Processing heuristics for active tab:', {
     tabId,
     score: results.anomalyScore,
     severity: results.severity,
     externalPosts: results.externalPosts,
-    externalLinks: results.externalLinks
+    externalLinks: results.externalLinks,
+    urlScanStatus: urlScanResult ? (urlScanResult.unavailable ? 'unavailable' : 'available') : 'none'
   });
 
   // Store heuristics results with tabId in key for easy filtering
-  const hostname = new URL(sender.tab.url).hostname;
   const storageKey = `heuristics_${tabId}_${hostname}_${Date.now()}`;
 
   chrome.storage.local.set({
@@ -764,7 +915,13 @@ function handleHeuristicsResults(results, sender) {
       ...results,
       hostname,
       tabId,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      urlScan: urlScanResult ? {
+        available: !urlScanResult.unavailable,
+        malicious: urlScanResult.result?.data?.isMalicious || false,
+        unavailable: urlScanResult.unavailable || false,
+        message: urlScanResult.result?.message || urlScanResult.message
+      } : null
     }
   });
 
@@ -779,6 +936,73 @@ function handleHeuristicsResults(results, sender) {
     console.log('🚨 CRITICAL heuristics detected!');
     console.log('⚠️ Threat details:', results.detectedIssues);
     // Warnings are shown in extension popup - no full-screen blocking
+  }
+}
+
+// Get URLScan result for a hostname
+async function getUrlScanResult(hostname) {
+  try {
+    const storageData = await chrome.storage.local.get();
+    const urlScanKey = `urlscan_${hostname}`;
+    return storageData[urlScanKey] || null;
+  } catch (error) {
+    console.error('Error getting URLScan result:', error);
+    return null;
+  }
+}
+
+// Integrate URLScan results into heuristics scoring
+function integrateUrlScanResults(results, urlScanResult) {
+  if (!urlScanResult || urlScanResult.unavailable) {
+    // URLScan unavailable - add informational issue but don't penalize score
+    results.detectedIssues.push({
+      type: 'urlscan_unavailable',
+      severity: 'info',
+      message: 'URLScan.io service unavailable - backend may not be running',
+      score: 0
+    });
+    return;
+  }
+
+  if (urlScanResult.result?.success && urlScanResult.result?.data) {
+    const isMalicious = urlScanResult.result.data.isMalicious;
+    
+    if (isMalicious) {
+      // URLScan marked as malicious - add significant points
+      results.anomalyScore += 100;
+      results.confidenceScore = Math.min(100, results.confidenceScore + 30); // Increase confidence
+      
+      results.detectedIssues.push({
+        type: 'urlscan_malicious',
+        severity: 'critical',
+        message: 'URLScan.io flagged this URL as malicious',
+        score: 100
+      });
+      
+      console.log('🚨 URLScan marked URL as malicious - added 100 points');
+    } else {
+      // URLScan marked as safe - increase confidence but don't reduce score
+      results.confidenceScore = Math.min(100, results.confidenceScore + 10);
+      
+      results.detectedIssues.push({
+        type: 'urlscan_safe',
+        severity: 'info',
+        message: 'URLScan.io verified this URL as safe',
+        score: 0
+      });
+    }
+    
+    // Recalculate severity with new score (using same logic as heuristics engine)
+    const adjustedScore = results.anomalyScore * (results.confidenceScore / 100);
+    if (adjustedScore >= 80 || (results.anomalyScore >= 100 && results.confidenceScore >= 60)) {
+      results.severity = 'critical';
+    } else if (adjustedScore >= 40 || (results.anomalyScore >= 50 && results.confidenceScore >= 40)) {
+      results.severity = 'warning';
+    } else if (results.anomalyScore >= 20) {
+      results.severity = 'warning';
+    } else {
+      results.severity = 'secure';
+    }
   }
 }
 

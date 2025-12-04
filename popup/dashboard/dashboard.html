@@ -19,12 +19,10 @@
             </div>
             <nav class="nav-tabs">
                 <button class="nav-tab active" data-tab="overview">Overview</button>
-                <button class="nav-tab" data-tab="site-analysis">Site Analysis</button>
-                <button class="nav-tab" data-tab="protection">Protection</button>
-                <button class="nav-tab" data-tab="threats">Threats</button>
-                <button class="nav-tab" data-tab="reports">Reports</button>
-                <button class="nav-tab" data-tab="technical">Technical</button>
-                <button class="nav-tab" data-tab="whitelist">White List</button>
+                <button class="nav-tab" data-tab="how-it-works">How It Works</button>
+                <button class="nav-tab" data-tab="history">History</button>
+                <button class="nav-tab" data-tab="whitelist">Whitelist</button>
+                <button class="nav-tab" data-tab="transparency">Transparency</button>
             </nav>
         </div>
     </header>
@@ -33,369 +31,159 @@
     <main class="dashboard-content">
         <!-- Overview Tab -->
         <section class="tab-content active" id="overviewTab">
-            <!-- Statistics Cards -->
-            <div class="stats-grid-large">
-                <div class="stat-card-large secure">
-                    <div class="stat-header">
-                        <div class="stat-icon-large">🔒</div>
-                        <div class="stat-info-large">
-                            <div class="stat-value-large" id="totalUpgradesLarge">0</div>
-                            <div class="stat-label-large">HTTPS Upgrades</div>
-                        </div>
+            <!-- Quick Stats -->
+            <div class="stats-grid-simple">
+                <div class="stat-card-simple">
+                    <div class="stat-icon">🔒</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="totalUpgrades">0</div>
+                        <div class="stat-label">HTTPS Upgrades</div>
                     </div>
-                    <div class="stat-trend" id="upgradesTrend">+0% from last week</div>
                 </div>
-
-                <div class="stat-card-large protected">
-                    <div class="stat-header">
-                        <div class="stat-icon-large">🛡️</div>
-                        <div class="stat-info-large">
-                            <div class="stat-value-large" id="sitesProtectedLarge">0</div>
-                            <div class="stat-label-large">Sites Protected</div>
-                        </div>
+                <div class="stat-card-simple">
+                    <div class="stat-icon">🚨</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="threatsDetected">0</div>
+                        <div class="stat-label">Threats Detected</div>
                     </div>
-                    <div class="stat-trend" id="protectedTrend">0 unique domains</div>
                 </div>
-
-                <div class="stat-card-large threats">
-                    <div class="stat-header">
-                        <div class="stat-icon-large">🚨</div>
-                        <div class="stat-info-large">
-                            <div class="stat-value-large" id="threatsBlockedLarge">0</div>
-                            <div class="stat-label-large">Threats Blocked</div>
-                        </div>
+                <div class="stat-card-simple">
+                    <div class="stat-icon">🛡️</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="sitesProtected">0</div>
+                        <div class="stat-label">Sites Analyzed</div>
                     </div>
-                    <div class="stat-trend" id="threatsTrend">0 today</div>
                 </div>
-
             </div>
 
-            <!-- Protection Layers Overview -->
+            <!-- Protection Status -->
             <section class="dashboard-section">
                 <div class="section-header">
-                    <h2>🛡️ Protection Layers Status</h2>
-                    <button class="info-btn" id="layersOverviewBtn">ℹ️</button>
+                    <h2>🛡️ Protection Status</h2>
                 </div>
-                <div class="layers-overview-grid">
-                    <div class="layer-overview-card" data-layer="https">
-                        <div class="layer-overview-header">
-                            <div class="layer-overview-icon">🔒</div>
+                <div class="protection-status-grid">
+                    <div class="protection-status-item active">
+                        <div class="protection-icon">🔒</div>
+                        <div class="protection-info">
                             <h3>HTTPS Enforcement</h3>
+                            <p>Active - Automatically upgrades HTTP to HTTPS</p>
                         </div>
-                        <div class="layer-overview-status active">Active</div>
-                        <div class="layer-overview-description">
-                            Automatically upgrades HTTP to HTTPS connections
-                        </div>
-                        <div class="layer-overview-stats">
-                            <div class="overview-stat">
-                                <span class="overview-stat-label">Upgrades:</span>
-                                <span class="overview-stat-value" id="httpsUpgrades">0</span>
-                            </div>
-                        </div>
+                        <div class="protection-badge active">Active</div>
                     </div>
-
-                    <div class="layer-overview-card" data-layer="tls">
-                        <div class="layer-overview-header">
-                            <div class="layer-overview-icon">🔐</div>
-                            <h3>TLS Verification</h3>
-                        </div>
-                        <div class="layer-overview-status" id="tlsOverviewStatus">Checking...</div>
-                        <div class="layer-overview-description">
-                            Validates SSL/TLS certificates for authenticity
-                        </div>
-                        <div class="layer-overview-stats">
-                            <div class="overview-stat">
-                                <span class="overview-stat-label">Verified:</span>
-                                <span class="overview-stat-value" id="tlsVerified">0</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="layer-overview-card" data-layer="heuristics">
-                        <div class="layer-overview-header">
-                            <div class="layer-overview-icon">🔍</div>
+                    <div class="protection-status-item active">
+                        <div class="protection-icon">🔍</div>
+                        <div class="protection-info">
                             <h3>Heuristic Analysis</h3>
+                            <p>Active - Detecting phishing and suspicious behavior</p>
                         </div>
-                        <div class="layer-overview-status" id="heuristicsOverviewStatus">Active</div>
-                        <div class="layer-overview-description">
-                            AI-powered phishing and threat detection
-                        </div>
-                        <div class="layer-overview-stats">
-                            <div class="overview-stat">
-                                <span class="overview-stat-label">Scanned:</span>
-                                <span class="overview-stat-value" id="heuristicsScanned">0</span>
-                            </div>
-                        </div>
+                        <div class="protection-badge active">Active</div>
                     </div>
                 </div>
             </section>
 
-            <!-- Recent Activity Timeline -->
+            <!-- Recent Activity Preview -->
             <section class="dashboard-section">
                 <div class="section-header">
                     <h2>📊 Recent Activity</h2>
-                    <button class="view-all-btn" id="viewAllActivityBtn">View All →</button>
+                    <button class="view-all-btn" id="viewAllHistoryBtn">View All →</button>
                 </div>
-                <div class="activity-timeline-large" id="activityTimelineLarge">
-                    <!-- Activity items will be inserted here -->
+                <div class="activity-preview" id="activityPreview">
+                    <!-- Recent activity items will be inserted here -->
                 </div>
             </section>
         </section>
 
-        <!-- Protection Tab -->
-        <section class="tab-content" id="protectionTab">
+        <!-- How It Works Tab -->
+        <section class="tab-content" id="how-it-worksTab">
             <section class="dashboard-section">
                 <div class="section-header">
-                    <h2>🛡️ Protection Layers Explained</h2>
+                    <h2>🎓 How Gone Phishin' Works</h2>
                 </div>
                 
-                <div class="protection-details">
-                    <!-- HTTPS Enforcement -->
-                    <div class="protection-detail-card">
-                        <div class="protection-detail-header">
-                            <div class="protection-detail-icon">🔒</div>
-                            <div class="protection-detail-title">
-                                <h3>HTTPS Enforcement</h3>
-                                <span class="protection-status-badge active">Active</span>
-                            </div>
-                        </div>
-                        <div class="protection-detail-content">
-                            <p class="protection-description">
-                                Automatically upgrades insecure HTTP connections to secure HTTPS, preventing data interception and man-in-the-middle attacks.
-                            </p>
-                            <div class="protection-how-it-works">
-                                <h4>How It Works:</h4>
-                                <ol>
-                                    <li>Monitors all network requests in real-time</li>
-                                    <li>Detects HTTP connections to HTTPS-capable sites</li>
-                                    <li>Automatically redirects to HTTPS version</li>
-                                    <li>Blocks mixed content (HTTP resources on HTTPS pages)</li>
-                                </ol>
-                            </div>
-                            <div class="protection-stats-grid">
-                                <div class="protection-stat">
-                                    <div class="protection-stat-value" id="httpsUpgradesDetail">0</div>
-                                    <div class="protection-stat-label">Total Upgrades</div>
-                                </div>
-                                <div class="protection-stat">
-                                    <div class="protection-stat-value" id="httpsBlocks">0</div>
-                                    <div class="protection-stat-label">Mixed Content Blocked</div>
-                                </div>
-                            </div>
-                        </div>
+                <div class="how-it-works-content">
+                    <div class="explanation-card">
+                        <div class="explanation-icon">🔒</div>
+                        <h3>1. HTTPS Enforcement</h3>
+                        <p><strong>Purpose:</strong> Prevents SSL stripping attacks by ensuring all connections use HTTPS.</p>
+                        <p><strong>How it works:</strong></p>
+                        <ul>
+                            <li>Monitors all navigation requests in real-time</li>
+                            <li>Detects HTTP connections to HTTPS-capable sites</li>
+                            <li>Automatically redirects to HTTPS version</li>
+                            <li>Blocks mixed content (HTTP resources on HTTPS pages)</li>
+                        </ul>
+                        <p class="note"><strong>Note:</strong> Localhost URLs are excluded from automatic HTTPS upgrades for development purposes.</p>
                     </div>
 
-                    <!-- Connection Security -->
-                    <div class="protection-detail-card">
-                        <div class="protection-detail-header">
-                            <div class="protection-detail-icon">🔐</div>
-                            <div class="protection-detail-title">
-                                <h3>Connection Security</h3>
-                                <span class="protection-status-badge" id="tlsDetailStatus">Active</span>
-                            </div>
-                        </div>
-                        <div class="protection-detail-content">
-                            <p class="protection-description">
-                                Verifies that sites use HTTPS with valid certificates. Certificate validation is handled by the browser. Advanced certificate monitoring is available in Firefox version only.
-                            </p>
-                            <div class="protection-how-it-works">
-                                <h4>How It Works:</h4>
-                                <ol>
-                                    <li>Checks if connection uses HTTPS protocol</li>
-                                    <li>Browser automatically validates certificates, checks expiration, and verifies CA trust</li>
-                                    <li>Extension supplements browser security but does not replace it</li>
-                                    <li><strong>Note:</strong> Advanced features (fingerprint tracking, issuer drift) require Firefox MV2 version</li>
-                                </ol>
-                            </div>
-                            <div class="protection-stats-grid">
-                                <div class="protection-stat">
-                                    <div class="protection-stat-value" id="tlsVerifiedDetail">0</div>
-                                    <div class="protection-stat-label">HTTPS Connections</div>
-                                </div>
-                                <div class="protection-stat">
-                                    <div class="protection-stat-value" id="tlsWarnings">0</div>
-                                    <div class="protection-stat-label">Warnings Detected</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="explanation-card">
+                        <div class="explanation-icon">🔐</div>
+                        <h3>2. Connection Security Check</h3>
+                        <p><strong>Purpose:</strong> Verifies that sites use HTTPS with valid certificates.</p>
+                        <p><strong>How it works:</strong></p>
+                        <ul>
+                            <li>Checks if the connection uses HTTPS protocol</li>
+                            <li>Browser automatically validates certificates, checks expiration, and verifies CA trust</li>
+                            <li>Extension supplements browser security but does not replace it</li>
+                            <li><strong>Chrome MV3 Limitation:</strong> Advanced certificate monitoring (fingerprint tracking, issuer drift) requires Firefox MV2 version</li>
+                        </ul>
                     </div>
 
-                    <!-- Heuristic Analysis -->
-                    <div class="protection-detail-card">
-                        <div class="protection-detail-header">
-                            <div class="protection-detail-icon">🔍</div>
-                            <div class="protection-detail-title">
-                                <h3>Heuristic Analysis</h3>
-                                <span class="protection-status-badge active">Active</span>
-                            </div>
-                        </div>
-                        <div class="protection-detail-content">
-                            <p class="protection-description">
-                                AI-powered content analysis that detects phishing attempts, suspicious patterns, and malicious behavior through machine learning algorithms.
-                            </p>
-                            <div class="protection-how-it-works">
-                                <h4>How It Works:</h4>
-                                <ol>
-                                    <li>Analyzes page content and structure</li>
-                                    <li>Examines link patterns and external domains</li>
-                                    <li>Detects suspicious form behavior</li>
-                                    <li>Identifies phishing indicators (typosquatting, etc.)</li>
-                                    <li>Calculates anomaly score based on multiple factors</li>
-                                </ol>
-                            </div>
-                            <div class="protection-stats-grid">
-                                <div class="protection-stat">
-                                    <div class="protection-stat-value" id="heuristicsScannedDetail">0</div>
-                                    <div class="protection-stat-label">Pages Scanned</div>
-                                </div>
-                                <div class="protection-stat">
-                                    <div class="protection-stat-value" id="phishingDetected">0</div>
-                                    <div class="protection-stat-label">Phishing Detected</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="explanation-card">
+                        <div class="explanation-icon">🔍</div>
+                        <h3>3. Heuristic Analysis</h3>
+                        <p><strong>Purpose:</strong> Detects potential phishing and malicious websites using behavioral analysis.</p>
+                        <p><strong>What it analyzes:</strong></p>
+                        <ul>
+                            <li><strong>Form Submissions:</strong> Detects forms submitting to external domains (especially with password fields)</li>
+                            <li><strong>Link Patterns:</strong> Identifies suspicious external links and URL shorteners</li>
+                            <li><strong>Hidden Elements:</strong> Detects hidden iframes that may be used for tracking or data collection</li>
+                            <li><strong>Network Requests:</strong> Monitors POST requests to external domains for data exfiltration</li>
+                            <li><strong>Dynamic Changes:</strong> Watches for dynamically added malicious elements</li>
+                        </ul>
+                        <p><strong>Scoring System:</strong></p>
+                        <ul>
+                            <li><strong>CRITICAL (80+):</strong> Block/Warn - High-risk threats detected</li>
+                            <li><strong>WARNING (40-79):</strong> Notify User - Suspicious patterns detected</li>
+                            <li><strong>SECURE (0-39):</strong> Passive Logging - No significant threats</li>
+                        </ul>
+                        <p class="note"><strong>False Positive Reduction:</strong> Legitimate services (Stripe, PayPal, OAuth providers) are whitelisted to reduce false alarms.</p>
+                    </div>
+
+                    <div class="explanation-card">
+                        <div class="explanation-icon">🛡️</div>
+                        <h3>4. Protection Layers</h3>
+                        <p>The extension uses multiple layers of protection:</p>
+                        <ol>
+                            <li><strong>Prevention:</strong> HTTPS enforcement prevents downgrade attacks</li>
+                            <li><strong>Detection:</strong> Heuristic analysis identifies suspicious behavior</li>
+                            <li><strong>Notification:</strong> Users are alerted to potential threats via the extension popup</li>
+                            <li><strong>Transparency:</strong> All detections are logged for review in the History tab</li>
+                        </ol>
                     </div>
                 </div>
             </section>
         </section>
 
-        <!-- Threats Tab -->
-        <section class="tab-content" id="threatsTab">
+        <!-- History Tab -->
+        <section class="tab-content" id="historyTab">
             <section class="dashboard-section">
                 <div class="section-header">
-                    <h2>🚨 Security Threats & Alerts</h2>
+                    <h2>📊 Website History</h2>
                     <div class="filter-buttons">
                         <button class="filter-btn active" data-filter="all">All</button>
                         <button class="filter-btn" data-filter="critical">Critical</button>
                         <button class="filter-btn" data-filter="warning">Warnings</button>
+                        <button class="filter-btn" data-filter="secure">Secure</button>
                     </div>
                 </div>
                 
-                <div class="threats-list" id="threatsList">
-                    <!-- Threats will be inserted here -->
-                </div>
-            </section>
-
-            <!-- Threat Statistics -->
-            <section class="dashboard-section">
-                <div class="section-header">
-                    <h2>📈 Threat Statistics</h2>
-                </div>
-                <div class="threat-stats-grid">
-                    <div class="threat-stat-card critical">
-                        <div class="threat-stat-icon">🚨</div>
-                        <div class="threat-stat-info">
-                            <div class="threat-stat-value" id="criticalThreats">0</div>
-                            <div class="threat-stat-label">Critical Threats</div>
-                        </div>
-                    </div>
-                    <div class="threat-stat-card warning">
-                        <div class="threat-stat-icon">⚠️</div>
-                        <div class="threat-stat-info">
-                            <div class="threat-stat-value" id="warningThreats">0</div>
-                            <div class="threat-stat-label">Warnings</div>
-                        </div>
-                    </div>
-                    <div class="threat-stat-card mitm">
-                        <div class="threat-stat-icon">🌐</div>
-                        <div class="threat-stat-info">
-                            <div class="threat-stat-value" id="mitmThreats">0</div>
-                            <div class="threat-stat-label">MITM Attempts</div>
-                        </div>
-                    </div>
-                    <div class="threat-stat-card phishing">
-                        <div class="threat-stat-icon">🎣</div>
-                        <div class="threat-stat-info">
-                            <div class="threat-stat-value" id="phishingThreats">0</div>
-                            <div class="threat-stat-label">Phishing Sites</div>
-                        </div>
-                    </div>
+                <div class="history-list" id="historyList">
+                    <!-- History items will be inserted here -->
                 </div>
             </section>
         </section>
 
-        <!-- Reports Tab -->
-        <section class="tab-content" id="reportsTab">
-            <section class="dashboard-section">
-                <div class="section-header">
-                    <h2>📋 Security Reports</h2>
-                    <button class="btn btn-primary" id="exportReportBtn">
-                        <span class="btn-icon">📥</span>
-                        <span>Export Report</span>
-                    </button>
-                </div>
-                
-                <!-- Report Filters -->
-                <div class="report-filters">
-                    <select class="filter-select" id="reportTimeFilter">
-                        <option value="24h">Last 24 Hours</option>
-                        <option value="7d" selected>Last 7 Days</option>
-                        <option value="30d">Last 30 Days</option>
-                        <option value="all">All Time</option>
-                    </select>
-                    <select class="filter-select" id="reportSeverityFilter">
-                        <option value="all">All Severities</option>
-                        <option value="critical">Critical Only</option>
-                        <option value="warning">Warnings Only</option>
-                        <option value="secure">Secure Only</option>
-                    </select>
-                </div>
-
-                <!-- Reports List -->
-                <div class="reports-list" id="reportsList">
-                    <!-- Reports will be inserted here -->
-                </div>
-            </section>
-        </section>
-
-        <!-- Site Analysis Tab -->
-        <section class="tab-content" id="site-analysisTab">
-            <section class="dashboard-section">
-                <div class="section-header">
-                    <h2>🔬 Site Analysis</h2>
-                    <div class="site-selector-container">
-                        <select class="site-selector" id="siteSelector">
-                            <option value="">Select a site to analyze...</option>
-                        </select>
-                        <button class="btn btn-secondary" id="analyzeCurrentSiteBtn">
-                            <span class="btn-icon">🌐</span>
-                            <span>Analyze Current Site</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Site Analysis Container -->
-                <div class="site-analysis-container" id="siteAnalysisContainer">
-                    <div class="analysis-placeholder">
-                        <div class="placeholder-icon">🔍</div>
-                        <h3>Select a Site to Analyze</h3>
-                        <p>Choose a site from the dropdown above or click "Analyze Current Site" to view comprehensive security analysis.</p>
-                    </div>
-                </div>
-            </section>
-        </section>
-
-        <!-- Technical Details Tab -->
-        <section class="tab-content" id="technicalTab">
-            <section class="dashboard-section">
-                <div class="section-header">
-                    <h2>🔬 Technical Analysis</h2>
-                    <button class="btn btn-secondary" id="refreshTechnicalBtn">
-                        <span class="btn-icon">🔄</span>
-                        <span>Refresh</span>
-                    </button>
-                </div>
-                
-                <!-- Technical Details Container -->
-                <div class="technical-container" id="technicalContainer">
-                    <div class="technical-loading">Loading technical data...</div>
-                </div>
-            </section>
-        </section>
-    </main>
-
-    <!-- Whitelist Tab -->
-    <main>
+        <!-- Whitelist Tab -->
         <section class="tab-content" id="whitelistTab">
             <section class="dashboard-section">
                 <div class="section-header">
@@ -406,27 +194,117 @@
                     </button>
                 </div>
 
-                <!-- Whitelist Container -->
+                <div class="whitelist-info">
+                    <p class="whitelist-description">
+                        Sites in your whitelist will bypass security checks. Use this for trusted sites that may trigger false positives.
+                    </p>
+                </div>
+
                 <div class="whitelist-container" id="whitelistContainer">
                     <div class="whitelist-loading">Loading whitelist...</div>
                 </div>
             </section>
         </section>
+
+        <!-- Transparency Tab -->
+        <section class="tab-content" id="transparencyTab">
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2>🔍 Extension Transparency</h2>
+                </div>
+                
+                <div class="transparency-content">
+                    <div class="transparency-section">
+                        <h3>📋 Permissions & Access</h3>
+                        <div class="permission-item">
+                            <div class="permission-icon">🌐</div>
+                            <div class="permission-info">
+                                <h4>Host Permissions (<code>&lt;all_urls&gt;</code>)</h4>
+                                <p><strong>Why:</strong> To analyze websites you visit and enforce HTTPS upgrades</p>
+                                <p><strong>What it does:</strong> Allows the extension to read page content and network requests for security analysis</p>
+                                <p><strong>Data:</strong> Analysis results are stored locally in your browser. No data is sent to external servers except URLScan.io API calls (with your consent).</p>
+                            </div>
+                        </div>
+
+                        <div class="permission-item">
+                            <div class="permission-icon">💾</div>
+                            <div class="permission-info">
+                                <h4>Storage Permission</h4>
+                                <p><strong>Why:</strong> To store analysis results, whitelist, and statistics locally</p>
+                                <p><strong>What it stores:</strong> Heuristic analysis results, HTTPS upgrade counts, whitelisted URLs, threat history</p>
+                                <p><strong>Location:</strong> All data is stored locally using Chrome's <code>chrome.storage.local</code> API. No cloud storage.</p>
+                            </div>
+                        </div>
+
+                        <div class="permission-item">
+                            <div class="permission-icon">🔒</div>
+                            <div class="permission-info">
+                                <h4>Declarative Net Request</h4>
+                                <p><strong>Why:</strong> To automatically upgrade HTTP to HTTPS connections</p>
+                                <p><strong>What it does:</strong> Intercepts HTTP requests and redirects them to HTTPS when available</p>
+                                <p><strong>Privacy:</strong> This happens locally in your browser. No external requests are made for this feature.</p>
+                            </div>
+                        </div>
+
+                        <div class="permission-item">
+                            <div class="permission-icon">📡</div>
+                            <div class="permission-info">
+                                <h4>Web Request & Navigation APIs</h4>
+                                <p><strong>Why:</strong> To monitor network activity and detect threats</p>
+                                <p><strong>What it monitors:</strong> Page navigations, network requests (for heuristic analysis)</p>
+                                <p><strong>Privacy:</strong> All analysis happens locally. Only URLScan.io API calls (optional) send URLs externally.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="transparency-section">
+                        <h3>🔐 Data Privacy</h3>
+                        <div class="privacy-item">
+                            <h4>What Data is Collected?</h4>
+                            <ul>
+                                <li><strong>Website Analysis:</strong> Heuristic analysis results (anomaly scores, detected threats) - stored locally</li>
+                                <li><strong>HTTPS Upgrades:</strong> Count of upgrades performed - stored locally</li>
+                                <li><strong>Whitelist:</strong> URLs you manually whitelist - stored locally</li>
+                                <li><strong>No Personal Data:</strong> The extension does not collect passwords, personal information, or browsing history</li>
+                            </ul>
+                        </div>
+
+                        <div class="privacy-item">
+                            <h4>Where is Data Stored?</h4>
+                            <ul>
+                                <li><strong>Local Storage:</strong> All data is stored in your browser's local storage</li>
+                                <li><strong>No Cloud Sync:</strong> Data is not synced to cloud services</li>
+                                <li><strong>No External Servers:</strong> Except optional URLScan.io API calls (which you can see in the code)</li>
+                            </ul>
+                        </div>
+
+                        <div class="privacy-item">
+                            <h4>External Services</h4>
+                            <ul>
+                                <li><strong>URLScan.io:</strong> Optional API integration for URL reputation checking. Only called when you visit a site, and only sends the URL.</li>
+                                <li><strong>No Tracking:</strong> The extension does not use analytics, tracking pixels, or telemetry</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="transparency-section">
+                        <h3>📖 Open Source</h3>
+                        <div class="opensource-item">
+                            <p>This extension is open source. You can review all code to verify:</p>
+                            <ul>
+                                <li>What permissions are used and why</li>
+                                <li>What data is collected and where it's stored</li>
+                                <li>What external services are called</li>
+                                <li>How the heuristic analysis works</li>
+                            </ul>
+                            <p class="note"><strong>Academic Project:</strong> This extension was developed as an academic capstone project. All code is available for review.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </section>
     </main>
 
-    <!-- Modals -->
-    <div class="modal" id="layerInfoModal" style="display: none;">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">Protection Layer Information</h2>
-                <button class="modal-close" id="closeModal">×</button>
-            </div>
-            <div class="modal-body" id="modalBody"></div>
-        </div>
-    </div>
-
-    <script src="site-analysis.js"></script>
     <script src="dashboard.js"></script>
 </body>
 </html>

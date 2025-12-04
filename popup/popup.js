@@ -107,11 +107,13 @@ async function updatePopup() {
             updateAnomalyScore(heuristicsData);
             updateThreats(heuristicsData);
             updateStatus(heuristicsData);
+            updateUrlScanStatus(heuristicsData);
         } else {
             // No heuristics data yet - show initial state
             updateAnomalyScore({ anomalyScore: 0, confidenceScore: 0, severity: 'secure' });
             document.getElementById('siteStatus').textContent = 'No threats detected';
             document.getElementById('threatsSection').style.display = 'none';
+            document.getElementById('urlScanItem').style.display = 'none';
             
             // Show a helpful message
             console.log('⏳ No heuristics data found for this tab yet');
@@ -301,6 +303,37 @@ function updateLastScan(timestamp) {
     } else {
         const hours = Math.floor(minutes / 60);
         lastScanElement.textContent = `${hours}h ago`;
+    }
+}
+
+// Update URLScan status
+function updateUrlScanStatus(heuristicsData) {
+    const urlScanItem = document.getElementById('urlScanItem');
+    const urlScanStatus = document.getElementById('urlScanStatus');
+    
+    if (!heuristicsData.urlScan) {
+        // No URLScan data yet
+        urlScanItem.style.display = 'none';
+        return;
+    }
+    
+    urlScanItem.style.display = 'flex';
+    
+    if (heuristicsData.urlScan.unavailable) {
+        // URLScan backend unavailable
+        urlScanStatus.textContent = '⚠️ Unavailable (backend not running)';
+        urlScanStatus.className = 'info-value warning';
+        urlScanStatus.title = 'URLScan.io service is unavailable. The backend server may not be running. This feature should be used when available.';
+    } else if (heuristicsData.urlScan.malicious) {
+        // URLScan marked as malicious
+        urlScanStatus.textContent = '🚨 Malicious';
+        urlScanStatus.className = 'info-value critical';
+        urlScanStatus.title = 'URLScan.io flagged this URL as malicious';
+    } else {
+        // URLScan marked as safe
+        urlScanStatus.textContent = '✅ Verified Safe';
+        urlScanStatus.className = 'info-value secure';
+        urlScanStatus.title = 'URLScan.io verified this URL as safe';
     }
 }
 
