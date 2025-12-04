@@ -1,6 +1,90 @@
 [
   {
     "id": 1,
+    "priority": 10,
+    "action": { "type": "allow" },
+    "condition": {
+      "urlFilter": "http://localhost*",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "script",
+        "image",
+        "font",
+        "stylesheet",
+        "xmlhttprequest",
+        "media",
+        "websocket",
+        "object",
+        "ping"
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 10,
+    "action": { "type": "allow" },
+    "condition": {
+      "urlFilter": "http://127.0.0.1*",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "script",
+        "image",
+        "font",
+        "stylesheet",
+        "xmlhttprequest",
+        "media",
+        "websocket",
+        "object",
+        "ping"
+      ]
+    }
+  },
+  {
+    "id": 10,
+    "priority": 10,
+    "action": { "type": "allow" },
+    "condition": {
+      "urlFilter": "http://localhost:8081*",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "script",
+        "image",
+        "font",
+        "stylesheet",
+        "xmlhttprequest",
+        "media",
+        "websocket",
+        "object",
+        "ping"
+      ]
+    }
+  },
+  {
+    "id": 11,
+    "priority": 10,
+    "action": { "type": "allow" },
+    "condition": {
+      "urlFilter": "http://127.0.0.1:8081*",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "script",
+        "image",
+        "font",
+        "stylesheet",
+        "xmlhttprequest",
+        "media",
+        "websocket",
+        "object",
+        "ping"
+      ]
+    }
+  },
+  {
+    "id": 3,
     "priority": 1,
     "action": { "type": "upgradeScheme" },
     "condition": {
@@ -21,7 +105,7 @@
     }
   },
   {
-    "id": 2,
+    "id": 4,
     "priority": 2,
     "action": { "type": "block" },
     "condition": {
@@ -40,7 +124,7 @@
     }
   },
   {
-    "id": 3,
+    "id": 5,
     "priority": 3,
     "action": { "type": "allow" },
     "condition": {
@@ -49,7 +133,7 @@
     }
   },
   {
-    "id": 4,
+    "id": 6,
     "priority": 3,
     "action": { "type": "allow" },
     "condition": {

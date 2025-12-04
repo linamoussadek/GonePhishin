@@ -259,19 +259,16 @@ async function loadStatistics() {
         const totalUpgrades = storageData.totalUpgrades || 0;
         const uniqueHostnames = new Set(allAuditData.map(a => a.hostname).filter(Boolean));
         const threatsBlocked = allAuditData.filter(a => a.severity === 'critical').length;
-        const notaryQueries = allAuditData.filter(a => a.notaryResults).length;
         
         // Update large statistics
         document.getElementById('totalUpgradesLarge').textContent = totalUpgrades.toLocaleString();
         document.getElementById('sitesProtectedLarge').textContent = uniqueHostnames.size.toLocaleString();
         document.getElementById('threatsBlockedLarge').textContent = threatsBlocked.toLocaleString();
-        document.getElementById('notaryQueriesLarge').textContent = notaryQueries.toLocaleString();
         
         // Calculate trends (simplified - would need historical data)
         document.getElementById('upgradesTrend').textContent = `+${Math.floor(Math.random() * 20)}% from last week`;
         document.getElementById('protectedTrend').textContent = `${uniqueHostnames.size} unique domains`;
         document.getElementById('threatsTrend').textContent = `${threatsBlocked > 0 ? threatsBlocked : 0} today`;
-        document.getElementById('notaryTrend').textContent = `${notaryQueries} successful`;
         
     } catch (error) {
         console.error('Error loading statistics:', error);
@@ -290,10 +287,6 @@ async function loadProtectionLayers() {
         const tlsVerified = allAuditData.filter(a => a.severity === 'secure').length;
         document.getElementById('tlsVerified').textContent = tlsVerified.toLocaleString();
         document.getElementById('tlsOverviewStatus').textContent = tlsVerified > 0 ? 'Active' : 'Checking...';
-        
-        // Notary queries
-        const notaryQueries = allAuditData.filter(a => a.notaryResults).length;
-        document.getElementById('notaryQueries').textContent = notaryQueries.toLocaleString();
         
         // Heuristics scanned
         const heuristicsKeys = Object.keys(storageData).filter(key => key.startsWith('heuristics_'));
@@ -316,13 +309,6 @@ async function loadProtectionDetails() {
         document.getElementById('tlsVerifiedDetail').textContent = tlsVerified.toLocaleString();
         document.getElementById('tlsWarnings').textContent = allAuditData.filter(a => a.severity === 'warning').length.toLocaleString();
         document.getElementById('tlsDetailStatus').textContent = 'Active';
-        
-        const notaryQueries = allAuditData.filter(a => a.notaryResults).length;
-        document.getElementById('notaryQueriesDetail').textContent = notaryQueries.toLocaleString();
-        document.getElementById('notaryConsensusCount').textContent = 
-            allAuditData.filter(a => a.consensus?.consensus === 'consistent').length.toLocaleString();
-        document.getElementById('mitmDetected').textContent = 
-            allAuditData.filter(a => a.consensus?.consensus === 'mitm_detected').length.toLocaleString();
         
         const heuristicsKeys = Object.keys(storageData).filter(key => key.startsWith('heuristics_'));
         document.getElementById('heuristicsScannedDetail').textContent = heuristicsKeys.length.toLocaleString();
@@ -600,12 +586,6 @@ function displayReports(reports) {
                         <div class="report-detail-label">Issuer</div>
                         <div class="report-detail-value">${report.issuer ? report.issuer.replace('CN=', '').substring(0, 30) + '...' : 'N/A'}</div>
                     </div>
-                    ${consensus ? `
-                    <div class="report-detail-item">
-                        <div class="report-detail-label">Notary Consensus</div>
-                        <div class="report-detail-value">${consensus.consensus || 'N/A'}</div>
-                    </div>
-                    ` : ''}
                 </div>
             </div>
         `;
@@ -674,20 +654,6 @@ function generateReportText(reports, timeFilter, severityFilter) {
         text += `Cipher Suite: ${report.cipher || 'N/A'}\n`;
         text += `Certificate Issuer: ${report.issuer || 'N/A'}\n`;
         text += `Fingerprint: ${report.fingerprint || 'N/A'}\n`;
-        
-        if (report.consensus) {
-            text += `\nNotary Consensus:\n`;
-            text += `  Status: ${report.consensus.consensus || 'N/A'}\n`;
-            text += `  Message: ${report.consensus.message || 'N/A'}\n`;
-            text += `  Details: ${report.consensus.details || 'N/A'}\n`;
-        }
-        
-        if (report.notaryResults) {
-            text += `\nNotary Results:\n`;
-            text += `  Queried: ${report.notaryResults.total || 0}\n`;
-            text += `  Successful: ${report.notaryResults.successful || 0}\n`;
-            text += `  Failed: ${report.notaryResults.failed || 0}\n`;
-        }
         
         text += `\n${'='.repeat(60)}\n\n`;
     });
@@ -847,64 +813,6 @@ function generateTechnicalAnalysisCard(data, index) {
                         </div>
                     </div>
                 </div>
-                
-                <!-- Notary Consensus Analysis -->
-                ${data.notaryResults ? `
-                <div class="technical-section">
-                    <h4 class="technical-section-title">
-                        <span class="section-icon">🌐</span>
-                        Notary Consensus Analysis
-                    </h4>
-                    <div class="technical-grid">
-                        <div class="technical-item">
-                            <span class="technical-label">Notaries Queried:</span>
-                            <div class="technical-value">${data.notaryResults.total || 0}</div>
-                        </div>
-                        <div class="technical-item">
-                            <span class="technical-label">Successful Responses:</span>
-                            <div class="technical-value">${data.notaryResults.successful || 0}</div>
-                        </div>
-                        <div class="technical-item">
-                            <span class="technical-label">Failed Queries:</span>
-                            <div class="technical-value">${data.notaryResults.failed || 0}</div>
-                        </div>
-                        <div class="technical-item">
-                            <span class="technical-label">Consensus Status:</span>
-                            <div class="technical-value code">${data.consensus?.consensus || 'N/A'}</div>
-                        </div>
-                        <div class="technical-item">
-                            <span class="technical-label">Consensus Severity:</span>
-                            <div class="technical-value code">${data.consensus?.severity || 'N/A'}</div>
-                        </div>
-                    </div>
-                    
-                    ${data.notaryResults.votes && data.notaryResults.votes.length > 0 ? `
-                    <div class="technical-subsection">
-                        <h5>Notary Fingerprints:</h5>
-                        <div class="fingerprint-list">
-                            ${data.notaryResults.votes.map((fp, idx) => `
-                                <div class="fingerprint-item">
-                                    <span class="fingerprint-index">Notary ${idx + 1}:</span>
-                                    <code class="fingerprint-value">${fp}</code>
-                                    <button class="copy-btn" data-copy="${fp}">📋</button>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-                    
-                    ${data.notaryResults.errors && data.notaryResults.errors.length > 0 ? `
-                    <div class="technical-subsection error">
-                        <h5>Notary Errors:</h5>
-                        <div class="error-list">
-                            ${data.notaryResults.errors.map(err => `
-                                <div class="error-item">${err}</div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-                </div>
-                ` : ''}
                 
                 <!-- Security Analysis -->
                 ${data.weakTlsIssues && data.weakTlsIssues.length > 0 ? `

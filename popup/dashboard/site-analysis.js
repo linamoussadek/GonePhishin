@@ -74,9 +74,6 @@ function generateSiteAnalysisHTML(analysis) {
         <!-- TLS Certificate Analysis -->
         ${audit ? generateTLSAnalysisSection(audit) : ''}
         
-        <!-- Notary Consensus Analysis -->
-        ${audit && audit.notaryResults ? generateNotaryAnalysisSection(audit) : ''}
-        
         <!-- Heuristics Analysis -->
         ${heuristics ? generateHeuristicsAnalysisSection(heuristics) : ''}
         
@@ -106,11 +103,6 @@ function generateOverviewSection(audit, heuristics) {
                     <div class="overview-label">TLS Verification</div>
                     <div class="overview-value">${audit.protocol || 'N/A'}</div>
                     <div class="overview-description">TLS protocol version used for encryption</div>
-                </div>
-                <div class="overview-card">
-                    <div class="overview-label">Notary Consensus</div>
-                    <div class="overview-value">${audit.consensus?.consensus || 'N/A'}</div>
-                    <div class="overview-description">${audit.notaryResults ? `${audit.notaryResults.successful}/${audit.notaryResults.total} notaries responded` : 'No notary data'}</div>
                 </div>
                 <div class="overview-card">
                     <div class="overview-label">Heuristics Score</div>
@@ -156,55 +148,56 @@ function generateHowItWorksSection() {
             </div>
             
             <div class="explanation-card">
-                <h4>2. TLS Certificate Verification</h4>
-                <p><strong>Purpose:</strong> Validates that the SSL/TLS certificate presented by the server is legitimate and hasn't been tampered with.</p>
+                <h4>2. Connection Security Check</h4>
+                <p><strong>Purpose:</strong> Verifies that the site uses HTTPS with a valid certificate.</p>
                 <p><strong>How it works:</strong></p>
                 <ol>
-                    <li>Chrome's securityInfo API provides certificate details during the TLS handshake</li>
-                    <li>We extract the certificate fingerprint (SHA-256 hash of the DER-encoded certificate)</li>
-                    <li>Validate certificate chain, expiration, and issuer</li>
-                    <li>Check for weak TLS versions or cipher suites</li>
-                    <li><strong>Note:</strong> In Manifest V3, we simulate this due to API limitations</li>
+                    <li>Checks if the connection uses HTTPS protocol</li>
+                    <li>The browser automatically validates certificates, checks expiration, and verifies certificate authority trust</li>
+                    <li>In Chrome MV3, certificate validation is handled entirely by the browser</li>
+                    <li><strong>Note:</strong> Advanced certificate monitoring (fingerprint tracking, issuer drift detection) is available in Firefox MV2 version only</li>
                 </ol>
                 <div class="code-example">
-                    <div class="code-label">Certificate Fingerprint Calculation:</div>
-                    <pre><code>// SHA-256 hash of DER-encoded certificate
-const fingerprint = await crypto.subtle.digest(
-  'SHA-256',
-  certificate.raw
-);
-// Result: sha256:abc123... (64 hex characters)</code></pre>
+                    <div class="code-label">Connection Check:</div>
+                    <pre><code>// Simple HTTPS check (Chrome MV3)
+if (url.startsWith('https://')) {
+  // Browser validates certificate automatically
+  return { secure: true, note: 'Certificate validated by browser' };
+}</code></pre>
                 </div>
             </div>
             
             <div class="explanation-card">
-                <h4>3. Notary Consensus System</h4>
-                <p><strong>Purpose:</strong> Detects man-in-the-middle (MITM) attacks by comparing certificates from multiple independent notary servers.</p>
+                <h4>3. Heuristic Analysis System</h4>
+                <p><strong>Purpose:</strong> Detects potential phishing and malicious websites using behavioral analysis and pattern recognition.</p>
                 <p><strong>Algorithm:</strong></p>
                 <ol>
-                    <li><strong>Query Phase:</strong> Simultaneously query multiple independent notary servers for the same hostname</li>
-                    <li><strong>Response Collection:</strong> Collect certificate fingerprints from each notary</li>
-                    <li><strong>Consensus Calculation:</strong>
+                    <li><strong>Content Analysis:</strong> Analyzes page content for suspicious patterns</li>
+                    <li><strong>Behavioral Detection:</strong> Monitors form submissions and external links</li>
+                    <li><strong>Pattern Matching:</strong>
                         <ul>
-                            <li>If all notaries agree → <strong>Consistent</strong> (secure)</li>
-                            <li>If notaries disagree → <strong>MITM Detected</strong> (critical threat)</li>
-                            <li>If mixed responses → <strong>Mixed</strong> (warning)</li>
+                            <li>Detects suspicious form submissions → <strong>Warning</strong></li>
+                            <li>Identifies external link patterns → <strong>Analysis</strong></li>
+                            <li>Checks for phishing indicators → <strong>Threat Detection</strong></li>
                         </ul>
                     </li>
-                    <li><strong>Decision Making:</strong> If notaries agree but differ from local certificate, it indicates a MITM attack</li>
+                    <li><strong>Scoring:</strong> Calculates anomaly score based on detected patterns</li>
                 </ol>
                 <div class="code-example">
-                    <div class="code-label">Consensus Algorithm:</div>
-                    <pre><code>function evaluateConsensus(localFingerprint, notaryResults) {
-  const votes = notaryResults.votes; // Array of fingerprints
-  const unique = [...new Set(votes)];
+                    <div class="code-label">Heuristic Algorithm:</div>
+                    <pre><code>function analyzeHeuristics(pageContent) {
+  const patterns = detectSuspiciousPatterns(pageContent);
+  const score = calculateAnomalyScore(patterns);
   
-  if (unique.length === 1) {
-    return { consensus: 'consistent', severity: 'low' };
-  } else if (unique.length === votes.length) {
-    return { consensus: 'mitm_detected', severity: 'critical' };
+  if (score > 80) {
+    return { severity: 'critical', threat: 'high' };
+  } else if (score > 50) {
+    return { severity: 'warning', threat: 'medium' };
   } else {
-    // Check for majority consensus
+    return { severity: 'secure', threat: 'low' };
+  }
+  
+  // Check for majority consensus
     const counts = countFingerprints(votes);
     const majority = findMajority(counts, votes.length);
     return majority ? 
@@ -248,207 +241,61 @@ else → 'secure'</code></pre>
 }
 
 function generateTLSAnalysisSection(audit) {
+    const isHttps = audit.url && audit.url.startsWith('https://');
+    
     return `
         <div class="analysis-section tls-section">
             <h3 class="section-title">
                 <span class="section-icon">🔐</span>
-                TLS Certificate Analysis
+                Connection Security Analysis
             </h3>
             
             <div class="tls-details-grid">
                 <div class="tls-detail-item">
-                    <div class="detail-label">Certificate Fingerprint (SHA-256)</div>
-                    <div class="detail-value code">${audit.fingerprint || 'N/A'}</div>
+                    <div class="detail-label">Protocol</div>
+                    <div class="detail-value code">${isHttps ? 'HTTPS' : 'HTTP'}</div>
                     <div class="detail-explanation">
-                        The SHA-256 hash of the DER-encoded certificate. This uniquely identifies the certificate and is used to detect certificate substitution attacks.
+                        The connection protocol used. HTTPS encrypts data in transit, while HTTP sends data in plaintext.
                     </div>
                 </div>
                 
                 <div class="tls-detail-item">
-                    <div class="detail-label">Subject</div>
-                    <div class="detail-value">${audit.subject || audit.hostname || 'N/A'}</div>
+                    <div class="detail-label">Hostname</div>
+                    <div class="detail-value">${audit.hostname || 'N/A'}</div>
                     <div class="detail-explanation">
-                        The entity the certificate was issued to. Typically contains the domain name (CN=domain.com).
+                        The domain name of the site being accessed.
                     </div>
                 </div>
                 
                 <div class="tls-detail-item">
-                    <div class="detail-label">Issuer</div>
-                    <div class="detail-value">${audit.issuer || 'N/A'}</div>
+                    <div class="detail-label">Certificate Status</div>
+                    <div class="detail-value">${isHttps ? 'Valid (verified by browser)' : 'Not applicable'}</div>
                     <div class="detail-explanation">
-                        The Certificate Authority (CA) that issued the certificate. Verified against the browser's trust store.
+                        ${isHttps 
+                            ? 'The browser has validated the certificate. Certificate validation, expiration checks, and CA trust verification are handled automatically by Chrome.' 
+                            : 'HTTP connections do not use certificates.'}
                     </div>
                 </div>
                 
                 <div class="tls-detail-item">
-                    <div class="detail-label">TLS Protocol Version</div>
-                    <div class="detail-value code">${audit.protocol || 'N/A'}</div>
+                    <div class="detail-label">Browser Validation</div>
+                    <div class="detail-value">${isHttps ? 'Active' : 'N/A'}</div>
                     <div class="detail-explanation">
-                        The TLS protocol version used for the connection. TLS 1.2 and 1.3 are considered secure. Older versions are vulnerable.
-                    </div>
-                </div>
-                
-                <div class="tls-detail-item">
-                    <div class="detail-label">Cipher Suite</div>
-                    <div class="detail-value code">${audit.cipher || 'N/A'}</div>
-                    <div class="detail-explanation">
-                        The cryptographic algorithms used for key exchange, encryption, and message authentication. Format: KEY_EXCHANGE-ENCRYPTION-MAC (e.g., ECDHE-RSA-AES256-GCM-SHA384).
-                    </div>
-                </div>
-                
-                <div class="tls-detail-item">
-                    <div class="detail-label">Valid From</div>
-                    <div class="detail-value">${audit.validFrom ? new Date(audit.validFrom).toLocaleString() : 'N/A'}</div>
-                    <div class="detail-explanation">
-                        Certificate validity start date. Certificates are only valid between this date and the expiration date.
-                    </div>
-                </div>
-                
-                <div class="tls-detail-item">
-                    <div class="detail-label">Valid To</div>
-                    <div class="detail-value">${audit.validTo ? new Date(audit.validTo).toLocaleString() : 'N/A'}</div>
-                    <div class="detail-explanation">
-                        Certificate expiration date. Expired certificates are invalid and should not be trusted.
+                        Chrome automatically validates certificates, checks expiration dates, verifies certificate authority trust, and ensures proper certificate chain. This extension supplements browser security but does not replace it.
                     </div>
                 </div>
             </div>
             
-            ${audit.weakTlsIssues && audit.weakTlsIssues.length > 0 ? `
-            <div class="tls-issues">
-                <h4>TLS Security Issues Detected</h4>
-                ${audit.weakTlsIssues.map(issue => `
-                    <div class="issue-card ${issue.severity}">
-                        <div class="issue-header">
-                            <span class="issue-type">${issue.type}</span>
-                            <span class="issue-severity-badge">${issue.severity}</span>
-                        </div>
-                        <div class="issue-message">${issue.message}</div>
-                        ${issue.protocol ? `<div class="issue-detail">Protocol: ${issue.protocol}</div>` : ''}
-                        ${issue.cipher ? `<div class="issue-detail">Cipher: ${issue.cipher}</div>` : ''}
-                    </div>
-                `).join('')}
-            </div>
-            ` : `
             <div class="tls-status-good">
-                <div class="status-icon">✅</div>
-                <div class="status-message">No TLS security issues detected. Certificate is valid and uses strong encryption.</div>
+                <div class="status-icon">ℹ️</div>
+                <div class="status-message">
+                    <strong>Chrome MV3 Limitation:</strong> Advanced certificate monitoring (fingerprint tracking, issuer drift detection, weak TLS detection) is not available in Chrome Manifest V3 due to API restrictions. These features are available in the Firefox MV2 version of this extension.
+                </div>
             </div>
-            `}
         </div>
     `;
 }
 
-function generateNotaryAnalysisSection(audit) {
-    const { notaryResults, consensus } = audit;
-    
-    return `
-        <div class="analysis-section notary-section">
-            <h3 class="section-title">
-                <span class="section-icon">🌐</span>
-                Notary Consensus Analysis
-            </h3>
-            
-            <div class="notary-overview">
-                <div class="notary-stat">
-                    <div class="stat-value">${notaryResults.total || 0}</div>
-                    <div class="stat-label">Notaries Queried</div>
-                </div>
-                <div class="notary-stat">
-                    <div class="stat-value success">${notaryResults.successful || 0}</div>
-                    <div class="stat-label">Successful Responses</div>
-                </div>
-                <div class="notary-stat">
-                    <div class="stat-value ${notaryResults.failed > 0 ? 'warning' : ''}">${notaryResults.failed || 0}</div>
-                    <div class="stat-label">Failed Queries</div>
-                </div>
-                <div class="notary-stat">
-                    <div class="stat-value ${consensus?.consensus === 'consistent' ? 'success' : consensus?.consensus === 'mitm_detected' ? 'error' : 'warning'}">${consensus?.consensus || 'N/A'}</div>
-                    <div class="stat-label">Consensus Result</div>
-                </div>
-            </div>
-            
-            <div class="notary-explanation">
-                <h4>How Notary Consensus Works</h4>
-                <p>Our extension queries multiple independent notary servers to verify certificates. Each notary server independently connects to the target website and retrieves its certificate fingerprint. We then compare these fingerprints:</p>
-                <ul>
-                    <li><strong>If all notaries agree:</strong> The certificate is legitimate (consensus: consistent)</li>
-                    <li><strong>If notaries disagree:</strong> There's likely a MITM attack intercepting the connection (consensus: mitm_detected)</li>
-                    <li><strong>If some notaries fail:</strong> Network issues or notary unavailability (consensus: mixed)</li>
-                </ul>
-            </div>
-            
-            ${notaryResults.votes && notaryResults.votes.length > 0 ? `
-            <div class="notary-fingerprints-section">
-                <h4>Notary Responses</h4>
-                <div class="fingerprint-comparison">
-                    ${notaryResults.votes.map((fp, idx) => `
-                        <div class="fingerprint-entry">
-                            <div class="fingerprint-header">
-                                <span class="notary-name">Notary Server ${idx + 1}</span>
-                                <span class="fingerprint-status success">✅ Responded</span>
-                            </div>
-                            <div class="fingerprint-value code">${fp}</div>
-                            <button class="copy-btn" data-copy="${fp}">📋 Copy</button>
-                        </div>
-                    `).join('')}
-                </div>
-                
-                <div class="consensus-analysis">
-                    <h4>Consensus Calculation</h4>
-                    <div class="calculation-steps">
-                        <div class="step">
-                            <div class="step-number">1</div>
-                            <div class="step-content">
-                                <strong>Collect Fingerprints:</strong> Received ${notaryResults.votes.length} fingerprints from notary servers
-                            </div>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">2</div>
-                            <div class="step-content">
-                                <strong>Find Unique Values:</strong> ${[...new Set(notaryResults.votes)].length} unique fingerprint(s) found
-                            </div>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">3</div>
-                            <div class="step-content">
-                                <strong>Evaluate Consensus:</strong>
-                                ${consensus?.consensus === 'consistent' ? 
-                                    '<span class="result-success">All notaries agree → CONSISTENT (Secure)</span>' :
-                                  consensus?.consensus === 'mitm_detected' ?
-                                    '<span class="result-error">Notaries disagree → MITM DETECTED (Critical Threat)</span>' :
-                                  consensus?.consensus === 'mixed' ?
-                                    '<span class="result-warning">Mixed responses → MIXED (Warning)</span>' :
-                                    'Unable to determine consensus'}
-                            </div>
-                        </div>
-                        ${consensus ? `
-                        <div class="step">
-                            <div class="step-number">4</div>
-                            <div class="step-content">
-                                <strong>Final Decision:</strong> ${consensus.message}
-                                ${consensus.details ? `<div class="step-detail">${consensus.details}</div>` : ''}
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-            ` : ''}
-            
-            ${notaryResults.errors && notaryResults.errors.length > 0 ? `
-            <div class="notary-errors">
-                <h4>Notary Query Errors</h4>
-                ${notaryResults.errors.map((err, idx) => `
-                    <div class="error-entry">
-                        <span class="error-index">Notary ${idx + 1}:</span>
-                        <span class="error-message">${err}</span>
-                    </div>
-                `).join('')}
-            </div>
-            ` : ''}
-        </div>
-    `;
-}
 
 function generateHeuristicsAnalysisSection(heuristics) {
     const detailed = heuristics.detailedAnalysis || {};
@@ -933,49 +780,49 @@ observer.observe(document.body, {
                         </thead>
                         <tbody>
                             <tr>
-                                <td>External form submission</td>
-                                <td class="score-value">+90</td>
-                                <td>Forms submitting data to external domains are highly suspicious</td>
-                            </tr>
-                            <tr>
-                                <td>Password form (external)</td>
-                                <td class="score-value">+50</td>
-                                <td>Password forms submitting externally indicate credential theft</td>
-                            </tr>
-                            <tr>
-                                <td>Hidden iframe (external)</td>
-                                <td class="score-value">+60</td>
-                                <td>Hidden external iframes often used for tracking or data collection</td>
-                            </tr>
-                            <tr>
-                                <td>External POST request</td>
+                                <td>Password form to different TLD (external)</td>
                                 <td class="score-value">+80</td>
-                                <td>POST requests to external domains may indicate data exfiltration</td>
+                                <td>Password forms submitting to different TLD indicate potential typosquatting/phishing</td>
                             </tr>
                             <tr>
-                                <td>Sensitive data in POST</td>
-                                <td class="score-value">+40</td>
-                                <td>Credit cards, passwords, SSN, etc. being sent externally</td>
+                                <td>Hidden form with sensitive fields</td>
+                                <td class="score-value">+50</td>
+                                <td>Hidden forms with password/payment fields are suspicious</td>
                             </tr>
                             <tr>
-                                <td>Suspicious link</td>
-                                <td class="score-value">+20</td>
-                                <td>URL shorteners, IP addresses, suspicious TLDs</td>
+                                <td>Sensitive data POST (external, non-legitimate)</td>
+                                <td class="score-value">+60</td>
+                                <td>Credit cards, passwords, SSN being sent to non-whitelisted external domains</td>
+                            </tr>
+                            <tr>
+                                <td>Link clone pattern (>70% to one domain)</td>
+                                <td class="score-value">+100</td>
+                                <td>Most links point to single external domain (likely full-site clone)</td>
+                            </tr>
+                            <tr>
+                                <td>URL shortener chain (multiple)</td>
+                                <td class="score-value">+25</td>
+                                <td>Multiple different URL shorteners detected (potential obfuscation)</td>
+                            </tr>
+                            <tr>
+                                <td>Suspicious domain patterns</td>
+                                <td class="score-value">+10-20</td>
+                                <td>High-risk TLDs (.tk, .ml, .ga, .cf), homograph attacks, very short domains</td>
                             </tr>
                         </tbody>
                     </table>
                     <div class="severity-thresholds">
                         <div class="threshold">
-                            <strong>Score ≥ 100:</strong> <span class="severity-critical">CRITICAL</span> - High risk of phishing or data exfiltration
+                            <strong>CRITICAL:</strong> <span class="severity-critical">Block/Warn</span> - URLScan.io marks as malicious, password form to brand-new domain, 70%+ links to single domain
                         </div>
                         <div class="threshold">
-                            <strong>Score ≥ 50:</strong> <span class="severity-high">HIGH</span> - Significant risk indicators
+                            <strong>WARNING:</strong> <span class="severity-warning">Notify User</span> - Mixed content, suspicious URL patterns, forms with suspicious fields going external
                         </div>
                         <div class="threshold">
-                            <strong>Score ≥ 20:</strong> <span class="severity-warning">WARNING</span> - Some suspicious patterns
+                            <strong>INFORMATIONAL:</strong> <span class="severity-secure">Passive Logging</span> - HTTPS upgrade occurred, external form to legitimate service, normal external links
                         </div>
-                        <div class="threshold">
-                            <strong>Score < 20:</strong> <span class="severity-secure">SECURE</span> - No significant threats
+                        <div class="threshold" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;">
+                            <strong>Note:</strong> Scoring uses confidence-adjusted values. Legitimate services (Stripe, PayPal, OAuth providers) are whitelisted to reduce false positives.
                         </div>
                     </div>
                 </div>
@@ -1005,18 +852,9 @@ function generateProtectionLayersSummary(audit, heuristics) {
                 <div class="layer-summary-card">
                     <div class="layer-icon">🔐</div>
                     <div class="layer-info">
-                        <h4>TLS Verification</h4>
-                        <div class="layer-status ${audit && audit.severity !== 'critical' ? 'active' : 'inactive'}">${audit ? 'Verified' : 'Not Analyzed'}</div>
-                        <p>Validated certificate fingerprint: ${audit?.fingerprint ? audit.fingerprint.substring(0, 32) + '...' : 'N/A'}</p>
-                    </div>
-                </div>
-                
-                <div class="layer-summary-card">
-                    <div class="layer-icon">🌐</div>
-                    <div class="layer-info">
-                        <h4>Notary Consensus</h4>
-                        <div class="layer-status ${audit?.consensus?.consensus === 'consistent' ? 'active' : audit?.consensus?.consensus === 'mitm_detected' ? 'error' : 'warning'}">${audit?.consensus?.consensus || 'Not Queried'}</div>
-                        <p>${audit?.notaryResults ? `${audit.notaryResults.successful}/${audit.notaryResults.total} notaries responded` : 'No notary data available'}</p>
+                        <h4>Connection Security</h4>
+                        <div class="layer-status ${audit && audit.url && audit.url.startsWith('https://') ? 'active' : 'inactive'}">${audit && audit.url && audit.url.startsWith('https://') ? 'HTTPS Valid' : 'HTTP'}</div>
+                        <p>${audit && audit.url && audit.url.startsWith('https://') ? 'Certificate validated by browser (Chrome MV3 limitation)' : 'Uses HTTP or not analyzed'}</p>
                     </div>
                 </div>
                 

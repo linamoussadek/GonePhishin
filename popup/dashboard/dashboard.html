@@ -68,16 +68,6 @@
                     <div class="stat-trend" id="threatsTrend">0 today</div>
                 </div>
 
-                <div class="stat-card-large notary">
-                    <div class="stat-header">
-                        <div class="stat-icon-large">🌐</div>
-                        <div class="stat-info-large">
-                            <div class="stat-value-large" id="notaryQueriesLarge">0</div>
-                            <div class="stat-label-large">Notary Queries</div>
-                        </div>
-                    </div>
-                    <div class="stat-trend" id="notaryTrend">0 successful</div>
-                </div>
             </div>
 
             <!-- Protection Layers Overview -->
@@ -117,23 +107,6 @@
                             <div class="overview-stat">
                                 <span class="overview-stat-label">Verified:</span>
                                 <span class="overview-stat-value" id="tlsVerified">0</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="layer-overview-card" data-layer="notary">
-                        <div class="layer-overview-header">
-                            <div class="layer-overview-icon">🌐</div>
-                            <h3>Notary Consensus</h3>
-                        </div>
-                        <div class="layer-overview-status" id="notaryOverviewStatus">Active</div>
-                        <div class="layer-overview-description">
-                            Cross-validates with independent notary servers
-                        </div>
-                        <div class="layer-overview-stats">
-                            <div class="overview-stat">
-                                <span class="overview-stat-label">Queries:</span>
-                                <span class="overview-stat-value" id="notaryQueries">0</span>
                             </div>
                         </div>
                     </div>
@@ -212,77 +185,36 @@
                         </div>
                     </div>
 
-                    <!-- TLS Verification -->
+                    <!-- Connection Security -->
                     <div class="protection-detail-card">
                         <div class="protection-detail-header">
                             <div class="protection-detail-icon">🔐</div>
                             <div class="protection-detail-title">
-                                <h3>TLS Certificate Verification</h3>
+                                <h3>Connection Security</h3>
                                 <span class="protection-status-badge" id="tlsDetailStatus">Active</span>
                             </div>
                         </div>
                         <div class="protection-detail-content">
                             <p class="protection-description">
-                                Validates SSL/TLS certificates to ensure they're legitimate, properly signed, and haven't been tampered with or expired.
+                                Verifies that sites use HTTPS with valid certificates. Certificate validation is handled by the browser. Advanced certificate monitoring is available in Firefox version only.
                             </p>
                             <div class="protection-how-it-works">
                                 <h4>How It Works:</h4>
                                 <ol>
-                                    <li>Extracts certificate information from TLS handshake</li>
-                                    <li>Validates certificate chain and signatures</li>
-                                    <li>Checks expiration dates and validity periods</li>
-                                    <li>Verifies certificate authority (CA) trust</li>
-                                    <li>Detects certificate pinning violations</li>
+                                    <li>Checks if connection uses HTTPS protocol</li>
+                                    <li>Browser automatically validates certificates, checks expiration, and verifies CA trust</li>
+                                    <li>Extension supplements browser security but does not replace it</li>
+                                    <li><strong>Note:</strong> Advanced features (fingerprint tracking, issuer drift) require Firefox MV2 version</li>
                                 </ol>
                             </div>
                             <div class="protection-stats-grid">
                                 <div class="protection-stat">
                                     <div class="protection-stat-value" id="tlsVerifiedDetail">0</div>
-                                    <div class="protection-stat-label">Certificates Verified</div>
+                                    <div class="protection-stat-label">HTTPS Connections</div>
                                 </div>
                                 <div class="protection-stat">
                                     <div class="protection-stat-value" id="tlsWarnings">0</div>
                                     <div class="protection-stat-label">Warnings Detected</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Notary Consensus -->
-                    <div class="protection-detail-card">
-                        <div class="protection-detail-header">
-                            <div class="protection-detail-icon">🌐</div>
-                            <div class="protection-detail-title">
-                                <h3>Notary Consensus</h3>
-                                <span class="protection-status-badge active">Active</span>
-                            </div>
-                        </div>
-                        <div class="protection-detail-content">
-                            <p class="protection-description">
-                                Cross-validates certificates with multiple independent notary servers to detect man-in-the-middle attacks and certificate pinning violations.
-                            </p>
-                            <div class="protection-how-it-works">
-                                <h4>How It Works:</h4>
-                                <ol>
-                                    <li>Queries multiple independent notary servers simultaneously</li>
-                                    <li>Each notary server independently verifies the certificate</li>
-                                    <li>Compares notary responses with local certificate</li>
-                                    <li>Detects discrepancies indicating MITM attacks</li>
-                                    <li>Uses consensus algorithm to determine threat level</li>
-                                </ol>
-                            </div>
-                            <div class="protection-stats-grid">
-                                <div class="protection-stat">
-                                    <div class="protection-stat-value" id="notaryQueriesDetail">0</div>
-                                    <div class="protection-stat-label">Notary Queries</div>
-                                </div>
-                                <div class="protection-stat">
-                                    <div class="protection-stat-value" id="notaryConsensusCount">0</div>
-                                    <div class="protection-stat-label">Consensus Achieved</div>
-                                </div>
-                                <div class="protection-stat">
-                                    <div class="protection-stat-value" id="mitmDetected">0</div>
-                                    <div class="protection-stat-label">MITM Detected</div>
                                 </div>
                             </div>
                         </div>

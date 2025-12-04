@@ -9,11 +9,6 @@ const PORT = process.env.SERVER_PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Import routes
-const notaryRoutes = require('./routes/notary');
-
-// Register routes
-app.use('/api/notary', notaryRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -23,7 +18,6 @@ app.get('/health', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 Notary endpoint: http://localhost:${PORT}/api/notary/observe`);
   console.log(`💚 Health check: http://localhost:${PORT}/health`);
 });
 

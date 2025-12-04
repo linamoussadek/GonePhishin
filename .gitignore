@@ -34,3 +34,21 @@ build/
 *.tmp
 *.temp
 
+# Backup files
+*.backup
+*.bak
+*~
+*-backup.*
+*-old.*
+*-copy.*
+
+# Fixed/duplicate versions (temporary development files)
+*-fixed.js
+*-fixed.*
+*-dev.js
+*-dev.*
+
+# Test site files (if temporary)
+phishing-test-site.html
+serve-test-site.js
+

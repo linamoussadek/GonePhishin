@@ -1,10 +1,37 @@
-// Heuristics Engine - Main orchestrator for MITM detection
-// Analyzes DOM, forms, links, and network requests for data exfiltration patterns
+// Heuristics Engine - Phishing Detection
+// Analyzes DOM, forms, links, and network requests for phishing patterns
+// Focuses on detecting actual phishing attempts, not legitimate services
 
 let anomalyScore = 0;
 let externalLinks = [];
 let externalPosts = [];
 let detectedIssues = [];
+let confidenceScore = 0; // 0-100, higher = more confident it's phishing
+
+// Legitimate payment processors and OAuth providers (whitelist)
+const LEGITIMATE_EXTERNAL_SERVICES = [
+  // Payment processors
+  'stripe.com', 'js.stripe.com', 'checkout.stripe.com',
+  'paypal.com', 'www.paypal.com', 'checkout.paypal.com',
+  'checkout.shopify.com', 'shopify.com',
+  'square.com', 'squareup.com',
+  'braintreegateway.com', 'braintree.com',
+  'authorize.net',
+  'adyen.com',
+  // OAuth providers
+  'accounts.google.com', 'google.com',
+  'login.microsoftonline.com', 'microsoft.com',
+  'github.com', 'github.io',
+  'facebook.com', 'www.facebook.com',
+  'okta.com',
+  'auth0.com',
+  'login.salesforce.com',
+  // Analytics/tracking (legitimate)
+  'google-analytics.com', 'googletagmanager.com',
+  'facebook.net', 'facebook.com',
+  'doubleclick.net',
+  'googlesyndication.com'
+];
 
 // Known good CDNs and domains to whitelist
 const KNOWN_GOOD_DOMAINS = [
@@ -14,13 +41,34 @@ const KNOWN_GOOD_DOMAINS = [
   'amazonaws.com', 'amazon.com',
   'jsdelivr.net', 'cdnjs.com',
   'github.com', 'githubusercontent.com',
-  'twitter.com', 'twimg.com'
+  'twitter.com', 'twimg.com',
+  ...LEGITIMATE_EXTERNAL_SERVICES
 ];
 
+// High-risk TLDs (known for abuse)
+const HIGH_RISK_TLDS = ['.tk', '.ml', '.ga', '.cf', '.gq', '.xyz'];
+
+// Check if domain is legitimate external service
+function isLegitimateExternalService(hostname) {
+  return LEGITIMATE_EXTERNAL_SERVICES.some(domain => 
+    hostname === domain || hostname.endsWith('.' + domain)
+  );
+}
+
+// Check if form action contains only tracking parameters
+function isTrackingForm(action) {
+  const trackingParams = ['utm_', 'ga_', 'fbclid', 'gclid', '_ga', 'ref'];
+  return trackingParams.some(param => action.includes(param)) && 
+         !action.includes('password') && 
+         !action.includes('login') &&
+         !action.includes('checkout');
+}
+
 // Initialize heuristics on page load
-function initHeuristics() {
+async function initHeuristics() {
   console.log('🔍 Initializing heuristics engine');
   
+  // Always run initial analysis - background will filter by active tab
   anomalyScore = 0;
   externalLinks = [];
   externalPosts = [];
@@ -31,6 +79,7 @@ function initHeuristics() {
   checkExternalLinks();
   checkHiddenIframes();
   interceptNetworkRequests();
+  analyzeLinkPatterns();
   
   // Monitor for dynamic changes
   setupMutationObserver();
@@ -38,16 +87,57 @@ function initHeuristics() {
   // Collect results
   const results = compileResults();
   
-  // Report to background
+  // Report to background (background will check if tab is active)
   reportToBackground(results);
+  
+  console.log('✅ Heuristics analysis complete:', {
+    score: results.anomalyScore,
+    severity: results.severity,
+    issues: results.detectedIssues.length
+  });
   
   return results;
 }
 
-// Check for forms submitting to external domains
+// Check if current tab is active
+async function checkIfActiveTab() {
+  return new Promise((resolve) => {
+    // First try to get tab ID from chrome.tabs
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (chrome.runtime.lastError) {
+        console.log('Error checking active tab:', chrome.runtime.lastError);
+        // Fallback: assume active if we can't check
+        resolve(true);
+        return;
+      }
+      
+      const currentTab = tabs[0];
+      if (!currentTab) {
+        resolve(false);
+        return;
+      }
+      
+      // Get this page's tab ID
+      chrome.runtime.sendMessage({ action: 'getTabId' }, (response) => {
+        if (chrome.runtime.lastError) {
+          // If message fails, assume we're active (fallback)
+          console.log('Could not verify tab ID, assuming active');
+          resolve(true);
+          return;
+        }
+        
+        const thisTabId = response?.tabId;
+        const isActive = thisTabId === currentTab.id;
+        resolve(isActive);
+      });
+    });
+  });
+}
+
+// Check for forms submitting to external domains (with false positive reduction)
 function checkFormSubmissions() {
   const forms = document.querySelectorAll('form');
-  console.log(`🔍 Checking ${forms.length} forms for external submissions`);
+  console.log(`🔍 Checking ${forms.length} forms for suspicious external submissions`);
   
   forms.forEach((form, index) => {
     const action = form.getAttribute('action') || '';
@@ -55,40 +145,71 @@ function checkFormSubmissions() {
     try {
       const formUrl = new URL(action, location.origin);
       
-      if (formUrl.origin !== location.origin) {
-        console.warn(`🚨 Form #${index + 1} submits to external domain:`, formUrl.hostname);
+      // Skip if same domain
+      if (formUrl.origin === location.origin) return;
+      
+      // Skip legitimate services
+      if (isLegitimateExternalService(formUrl.hostname)) {
+        console.log(`✅ Form submits to legitimate service: ${formUrl.hostname}`);
+        return;
+      }
+      
+      // Skip tracking-only forms
+      if (isTrackingForm(action)) {
+        console.log(`✅ Form appears to be tracking form: ${action.substring(0, 50)}`);
+        return;
+      }
+      
+      const hasPassword = form.querySelector('input[type="password"]');
+      const hasPaymentFields = form.querySelector('input[name*="card"], input[name*="cvv"], input[name*="cvc"]');
+      const style = window.getComputedStyle(form);
+      const isHidden = style.display === 'none' || style.visibility === 'hidden';
+      
+      // Only flag if form is hidden AND contains sensitive fields
+      if (isHidden && (hasPassword || hasPaymentFields)) {
+        console.warn(`⚠️ Hidden form with sensitive fields submits externally: ${formUrl.hostname}`);
+        anomalyScore += 50;
+        confidenceScore += 30;
+        detectedIssues.push({
+          type: 'hidden_sensitive_form',
+          severity: 'warning',
+          message: `Hidden form with ${hasPassword ? 'password' : 'payment'} fields submits to ${formUrl.hostname}`,
+          confidence: 70
+        });
+      }
+      // Flag password forms to non-legitimate external domains
+      else if (hasPassword && !isLegitimateExternalService(formUrl.hostname)) {
+        // Check if different TLD (potential typosquatting)
+        const currentTld = location.hostname.split('.').slice(-2).join('.');
+        const formTld = formUrl.hostname.split('.').slice(-2).join('.');
         
-        anomalyScore += 90;
-        
-        // Extra suspicion if it has password fields
-        const hasPassword = form.querySelector('input[type="password"]');
-        if (hasPassword) {
-          console.warn('🚨 CRITICAL: Password form submits externally!');
-          anomalyScore += 50;
+        if (currentTld !== formTld) {
+          console.warn(`🚨 Password form submits to different TLD: ${formUrl.hostname}`);
+          anomalyScore += 80;
+          confidenceScore += 60;
           detectedIssues.push({
-            type: 'password_exfiltration',
+            type: 'password_external_different_tld',
             severity: 'critical',
-            message: `Password form submits to ${formUrl.hostname}`
-          });
-        }
-        
-        // Check if form is hidden
-        const style = window.getComputedStyle(form);
-        if (style.display === 'none' || style.visibility === 'hidden') {
-          console.warn('⚠️ Form is hidden!');
-          anomalyScore += 30;
-          detectedIssues.push({
-            type: 'hidden_form',
-            severity: 'warning',
-            message: `Hidden form submits to ${formUrl.hostname}`
+            message: `Password form submits to ${formUrl.hostname} (different TLD than ${location.hostname})`,
+            confidence: 85
           });
         } else {
+          // Same TLD but external - could be legitimate subdomain, lower confidence
+          console.log(`⚠️ Password form submits externally (same TLD): ${formUrl.hostname}`);
+          anomalyScore += 20;
+          confidenceScore += 15;
           detectedIssues.push({
-            type: 'external_form',
-            severity: 'critical',
-            message: `Form submits to ${formUrl.hostname}`
+            type: 'password_external_same_tld',
+            severity: 'warning',
+            message: `Password form submits to ${formUrl.hostname}`,
+            confidence: 40
           });
         }
+      }
+      // External form without password - informational only
+      else {
+        console.log(`ℹ️ External form submission (no sensitive fields): ${formUrl.hostname}`);
+        // Don't add to score, just log
       }
     } catch (e) {
       // Invalid URL, skip
@@ -134,55 +255,37 @@ function checkExternalLinks() {
   analyzeLinkPatterns();
 }
 
-// Check for suspicious domain patterns
+// Check for suspicious domain patterns (improved to reduce false positives)
 function isSuspiciousDomain(hostname) {
-  const suspiciousPatterns = [
-    /bit\.ly|tinyurl|goo\.gl|t\.co|ow\.ly/gi,  // URL shorteners
-    /^\d+\.\d+\.\d+\.\d+$/g,                     // IP addresses
-    /\.tk$|\.ml$|\.ga$|\.cf$|\.xyz$/gi,          // Suspicious TLDs
-    /^[a-z0-9-]{1,10}\.[a-z]{2,3}$/gi            // Very short domains
-  ];
+  // Skip legitimate services
+  if (isLegitimateExternalService(hostname)) return false;
   
-  return suspiciousPatterns.some(pattern => pattern.test(hostname));
+  // Check for high-risk TLDs
+  const hasHighRiskTld = HIGH_RISK_TLDS.some(tld => hostname.endsWith(tld));
+  
+  // Check for URL shorteners (only flag if not from known good domains)
+  const isUrlShortener = /bit\.ly|tinyurl|goo\.gl|t\.co|ow\.ly|short\.link/gi.test(hostname);
+  
+  // Check for very short domains (potential typosquatting)
+  const isVeryShort = /^[a-z0-9-]{1,8}\.[a-z]{2,3}$/gi.test(hostname);
+  
+  // Check for homograph attacks (mixed scripts, lookalike characters)
+  const hasMixedScripts = /[а-яё]/gi.test(hostname) || /[α-ω]/gi.test(hostname);
+  
+  return hasHighRiskTld || (isUrlShortener && !isLegitimateExternalService(hostname)) || 
+         (isVeryShort && hasHighRiskTld) || hasMixedScripts;
 }
 
-// Check for hidden external iframes
+// Check for hidden external iframes (removed - too many false positives)
+// Hidden iframes are commonly used for analytics, tracking, and legitimate embeds
 function checkHiddenIframes() {
-  const iframes = document.querySelectorAll('iframe');
-  console.log(`🔍 Checking ${iframes.length} iframes`);
-  
-  iframes.forEach(iframe => {
-    const style = window.getComputedStyle(iframe);
-    const isHidden = style.display === 'none' || 
-                     style.visibility === 'hidden' ||
-                     parseFloat(style.opacity) === 0;
-    
-    if (iframe.src) {
-      try {
-        const iframeUrl = new URL(iframe.src, location.origin);
-        
-        if (iframeUrl.origin !== location.origin) {
-          if (isHidden) {
-            console.warn('🚨 Hidden external iframe:', iframeUrl.hostname);
-            anomalyScore += 60;
-            detectedIssues.push({
-              type: 'hidden_iframe',
-              severity: 'critical',
-              message: `Hidden iframe from ${iframeUrl.hostname}`
-            });
-          }
-        }
-      } catch (e) {
-        // Can't access iframe content - suspicious
-        if (isHidden) {
-          anomalyScore += 30;
-        }
-      }
-    }
-  });
+  // Disabled: Hidden iframes are not a reliable indicator of phishing
+  // Many legitimate sites use hidden iframes for analytics, social widgets, etc.
+  // This check produced too many false positives
+  return;
 }
 
-// Intercept network requests to detect POST exfiltration
+// Intercept network requests to detect POST exfiltration (improved)
 function interceptNetworkRequests() {
   // Intercept fetch
   const originalFetch = window.fetch;
@@ -194,10 +297,8 @@ function interceptNetworkRequests() {
         const requestUrl = typeof url === 'string' ? url : url.href;
         const reqUrl = new URL(requestUrl, location.origin);
         
-        if (reqUrl.origin !== location.origin) {
-          console.warn('🚨 Fetch POST to external domain:', reqUrl.hostname);
-          anomalyScore += 80;
-          
+        // Skip legitimate services
+        if (reqUrl.origin !== location.origin && !isLegitimateExternalService(reqUrl.hostname)) {
           externalPosts.push({
             url: reqUrl.href,
             domain: reqUrl.hostname,
@@ -205,16 +306,18 @@ function interceptNetworkRequests() {
             timestamp: Date.now()
           });
           
-          // Check for sensitive data
+          // Only flag if sensitive data detected AND not legitimate service
           if (options.body) {
             const bodyStr = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
             if (containsSensitiveData(bodyStr)) {
-              console.warn('🚨 CRITICAL: Sensitive data in POST!');
-              anomalyScore += 40;
+              console.warn(`⚠️ Sensitive data POST to external domain: ${reqUrl.hostname}`);
+              anomalyScore += 60;
+              confidenceScore += 50;
               detectedIssues.push({
                 type: 'sensitive_data_exfiltration',
                 severity: 'critical',
-                message: `POSTing sensitive data to ${reqUrl.hostname}`
+                message: `POSTing sensitive data to ${reqUrl.hostname}`,
+                confidence: 80
               });
             }
           }
@@ -242,10 +345,8 @@ function interceptNetworkRequests() {
       try {
         const reqUrl = new URL(this._url, location.origin);
         
-        if (reqUrl.origin !== location.origin) {
-          console.warn('🚨 XHR POST to external domain:', reqUrl.hostname);
-          anomalyScore += 80;
-          
+        // Skip legitimate services
+        if (reqUrl.origin !== location.origin && !isLegitimateExternalService(reqUrl.hostname)) {
           externalPosts.push({
             url: reqUrl.href,
             domain: reqUrl.hostname,
@@ -253,14 +354,16 @@ function interceptNetworkRequests() {
             timestamp: Date.now()
           });
           
-          // Check for sensitive data
+          // Only flag if sensitive data detected
           if (data && containsSensitiveData(data.toString())) {
-            console.warn('🚨 CRITICAL: Sensitive data in XHR POST!');
-            anomalyScore += 40;
+            console.warn(`⚠️ Sensitive data XHR POST to external domain: ${reqUrl.hostname}`);
+            anomalyScore += 60;
+            confidenceScore += 50;
             detectedIssues.push({
               type: 'sensitive_data_exfiltration',
               severity: 'critical',
-              message: `POSTing sensitive data via XHR to ${reqUrl.hostname}`
+              message: `POSTing sensitive data via XHR to ${reqUrl.hostname}`,
+              confidence: 80
             });
           }
         }
@@ -293,77 +396,234 @@ function containsSensitiveData(str) {
   return sensitivePatterns.some(pattern => lower.includes(pattern));
 }
 
-// Analyze link patterns for anomalies
+// Analyze link patterns for anomalies (improved)
 function analyzeLinkPatterns() {
   if (externalLinks.length === 0) return;
   
+  // Filter out legitimate domains
+  const suspiciousLinks = externalLinks.filter(link => 
+    !isLegitimateExternalService(link.domain) && 
+    !KNOWN_GOOD_DOMAINS.some(domain => link.domain.includes(domain))
+  );
+  
+  if (suspiciousLinks.length === 0) return;
+  
   const domainCounts = {};
-  externalLinks.forEach(link => {
+  suspiciousLinks.forEach(link => {
     domainCounts[link.domain] = (domainCounts[link.domain] || 0) + 1;
   });
   
-  // If too many links point to one external domain
+  const totalLinks = document.querySelectorAll('a[href]').length;
+  const suspiciousLinkCount = suspiciousLinks.length;
+  
+  // Only flag if > 70% of links go to single external domain (clone indicator)
   Object.entries(domainCounts).forEach(([domain, count]) => {
-    if (count > 10) {
-      console.warn('⚠️ Excessive links to one external domain:', domain, `(${count} links)`);
-      anomalyScore += 15;
+    const percentage = (count / totalLinks) * 100;
+    if (percentage > 70 && count > 5) {
+      console.warn(`🚨 CRITICAL: ${percentage.toFixed(1)}% of links point to ${domain} (likely clone)`);
+      anomalyScore += 100;
+      confidenceScore += 80;
+      detectedIssues.push({
+        type: 'link_clone_pattern',
+        severity: 'critical',
+        message: `${count} links (${percentage.toFixed(1)}%) point to ${domain}`,
+        confidence: 85
+      });
+    } else if (count > 10) {
+      console.log(`ℹ️ Multiple links to external domain: ${domain} (${count} links)`);
+      // Don't add to score, just informational
     }
   });
   
-  // Check for URL shorteners
-  const shortenedLinks = externalLinks.filter(link => 
-    /bit\.ly|tinyurl|goo\.gl|t\.co|ow\.ly/gi.test(link.url)
+  // Check for URL shortener chains (more suspicious than single shortener)
+  const shortenedLinks = suspiciousLinks.filter(link => 
+    /bit\.ly|tinyurl|goo\.gl|t\.co|ow\.ly|short\.link/gi.test(link.url)
   );
   
-  if (shortenedLinks.length > 0) {
-    console.warn('⚠️ URL shorteners detected:', shortenedLinks.length);
-    anomalyScore += 20;
+  // Only flag if multiple different shorteners (potential obfuscation)
+  const uniqueShorteners = new Set(shortenedLinks.map(l => l.domain));
+  if (uniqueShorteners.size > 2) {
+    console.warn(`⚠️ Multiple URL shorteners detected: ${uniqueShorteners.size} different services`);
+    anomalyScore += 25;
+    confidenceScore += 20;
+    detectedIssues.push({
+      type: 'url_shortener_chain',
+      severity: 'warning',
+      message: `Multiple URL shorteners detected (${uniqueShorteners.size} different services)`,
+      confidence: 50
+    });
   }
 }
 
 // Setup MutationObserver to watch for dynamic changes
 function setupMutationObserver() {
+  let debounceTimer = null;
+  
   const observer = new MutationObserver(mutations => {
+    // Debounce rapid changes - re-analyze after DOM settles
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      console.log('🔄 DOM changed - re-running heuristics analysis...');
+      // Reset scores and re-run full analysis
+      anomalyScore = 0;
+      confidenceScore = 0;
+      detectedIssues = [];
+      externalLinks = [];
+      externalPosts = [];
+      
+      // Re-run all checks (background will filter by active tab)
+      checkFormSubmissions();
+      checkExternalLinks();
+      checkHiddenIframes();
+      interceptNetworkRequests();
+      analyzeLinkPatterns();
+      
+      // Report updated results
+      const results = compileResults();
+      reportToBackground(results);
+    }, 300); // Wait 300ms for DOM to settle
+    
+    // Also handle immediate form/link additions
     mutations.forEach(mutation => {
       mutation.addedNodes.forEach(node => {
-        if (node.tagName === 'FORM') {
-          // New form added
-          const action = node.getAttribute('action') || '';
-          try {
-            const formUrl = new URL(action, location.origin);
-            if (formUrl.origin !== location.origin) {
-              console.warn('🚨 Dynamic form submits externally:', formUrl.hostname);
-              anomalyScore += 90;
-              
-              const hasPassword = node.querySelector('input[type="password"]');
-              if (hasPassword) {
-                console.warn('🚨 CRITICAL: Dynamic password form!');
-                anomalyScore += 50;
+        if (node.nodeType === 1) { // Element node
+          if (node.tagName === 'FORM') {
+            // New form added dynamically
+            const action = node.getAttribute('action') || '';
+            try {
+              const formUrl = new URL(action, location.origin);
+              if (formUrl.origin !== location.origin && !isLegitimateExternalService(formUrl.hostname)) {
+                const hasPassword = node.querySelector('input[type="password"]');
+                const hasPaymentFields = node.querySelector('input[name*="card"], input[name*="cvv"], input[name*="cvc"]');
+                const style = window.getComputedStyle(node);
+                const isHidden = style.display === 'none' || style.visibility === 'hidden';
+                
+                // Only flag if hidden with password/payment or different TLD
+                if (hasPassword || hasPaymentFields) {
+                  const currentTld = location.hostname.split('.').slice(-2).join('.');
+                  const formTld = formUrl.hostname.split('.').slice(-2).join('.');
+                  
+                  if (currentTld !== formTld) {
+                    console.warn(`🚨 Dynamic password/payment form to different TLD: ${formUrl.hostname}`);
+                    anomalyScore += 80;
+                    confidenceScore += 60;
+                    detectedIssues.push({
+                      type: 'password_external_different_tld',
+                      severity: 'critical',
+                      message: `Password/payment form submits to ${formUrl.hostname} (different TLD)`,
+                      confidence: 85
+                    });
+                  } else if (isHidden && (hasPassword || hasPaymentFields)) {
+                    console.warn(`🚨 Hidden form with sensitive fields: ${formUrl.hostname}`);
+                    anomalyScore += 50;
+                    confidenceScore += 70;
+                    detectedIssues.push({
+                      type: 'hidden_sensitive_form',
+                      severity: 'warning',
+                      message: `Hidden form with ${hasPassword ? 'password' : 'payment'} fields submits to ${formUrl.hostname}`,
+                      confidence: 70
+                    });
+                  }
+                }
               }
-            }
-          } catch (e) {}
-        } else if (node.tagName === 'A' && node.hasAttribute('href')) {
-          // New link added
-          const href = node.getAttribute('href');
-          try {
-            const linkUrl = new URL(href, location.origin);
-            if (linkUrl.origin !== location.origin && isSuspiciousDomain(linkUrl.hostname)) {
-              console.warn('🚨 Dynamic suspicious link:', linkUrl.hostname);
-              anomalyScore += 20;
-            }
-          } catch (e) {}
+            } catch (e) {}
+          } else if (node.tagName === 'A' && node.hasAttribute('href')) {
+            // New link added dynamically
+            const href = node.getAttribute('href');
+            try {
+              const linkUrl = new URL(href, location.origin);
+              if (linkUrl.origin !== location.origin && 
+                  isSuspiciousDomain(linkUrl.hostname) && 
+                  !isLegitimateExternalService(linkUrl.hostname)) {
+                console.log(`ℹ️ Dynamic suspicious link: ${linkUrl.hostname}`);
+                anomalyScore += 10;
+                confidenceScore += 5;
+                detectedIssues.push({
+                  type: 'suspicious_link',
+                  severity: 'warning',
+                  message: `Suspicious external link: ${linkUrl.hostname}`,
+                  confidence: 30
+                });
+              }
+            } catch (e) {}
+          }
         }
       });
     });
-    
-    // Report updated results
-    const results = compileResults();
-    reportToBackground(results);
   });
   
   observer.observe(document.body, { 
     childList: true, 
-    subtree: true 
+    subtree: true,
+    attributes: true, // Also watch for attribute changes (like form action)
+    attributeFilter: ['action', 'href'], // Only watch relevant attributes
+    characterData: false
+  });
+  
+  // Also handle attribute changes (form action changes)
+  const attributeObserver = new MutationObserver(mutations => {
+    let shouldReanalyze = false;
+    
+    mutations.forEach(mutation => {
+      if (mutation.type === 'attributes') {
+        const target = mutation.target;
+        if (target.tagName === 'FORM' && mutation.attributeName === 'action') {
+          console.log('🔄 Form action changed - triggering re-analysis');
+          shouldReanalyze = true;
+        } else if (target.tagName === 'A' && mutation.attributeName === 'href') {
+          console.log('🔄 Link href changed - triggering re-analysis');
+          shouldReanalyze = true;
+        }
+      }
+    });
+    
+    if (shouldReanalyze) {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        console.log('🔄 Attributes changed - re-running heuristics analysis...');
+        anomalyScore = 0;
+        confidenceScore = 0;
+        detectedIssues = [];
+        externalLinks = [];
+        externalPosts = [];
+        
+        checkFormSubmissions();
+        checkExternalLinks();
+        checkHiddenIframes();
+        interceptNetworkRequests();
+        analyzeLinkPatterns();
+        
+        const results = compileResults();
+        reportToBackground(results);
+      }, 300);
+    }
+  });
+  
+  attributeObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['action', 'href'],
+    subtree: true
+  });
+  
+  // Also listen for custom trigger events
+  window.addEventListener('heuristics-trigger', () => {
+    console.log('🔄 Manual heuristics trigger received');
+    setTimeout(() => {
+      anomalyScore = 0;
+      confidenceScore = 0;
+      detectedIssues = [];
+      externalLinks = [];
+      externalPosts = [];
+      
+      checkFormSubmissions();
+      checkExternalLinks();
+      checkHiddenIframes();
+      interceptNetworkRequests();
+      analyzeLinkPatterns();
+      
+      const results = compileResults();
+      reportToBackground(results);
+    }, 100);
   });
 }
 
@@ -446,6 +706,7 @@ function compileResults() {
   
   return {
     anomalyScore,
+    confidenceScore,
     severity,
     externalPosts: externalPosts.length,
     externalLinks: externalLinks.length,
@@ -474,36 +735,63 @@ function compileResults() {
   };
 }
 
-// Determine severity based on score
+// Determine severity based on score and confidence
 function determineSeverity(score) {
-  if (score >= 100) return 'critical';
-  if (score >= 50) return 'high';
+  // Use confidence-adjusted scoring
+  const adjustedScore = score * (confidenceScore / 100);
+  
+  if (adjustedScore >= 80 || (score >= 100 && confidenceScore >= 60)) return 'critical';
+  if (adjustedScore >= 40 || (score >= 50 && confidenceScore >= 40)) return 'warning';
   if (score >= 20) return 'warning';
   return 'secure';
 }
 
 // Report results to background script
 function reportToBackground(results) {
+  console.log('📤 Reporting heuristics results to background:', {
+    score: results.anomalyScore,
+    severity: results.severity,
+    issues: results.detectedIssues.length
+  });
+  
   chrome.runtime.sendMessage({
     action: 'heuristicsResults',
     data: results
-  }).catch(err => {
-    // Background script might not be ready
-    console.log('Background not ready, will retry');
+  }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.error('❌ Error sending heuristics results:', chrome.runtime.lastError.message);
+    } else {
+      console.log('✅ Heuristics results sent successfully');
+    }
   });
 }
 
 // Export for content script use
 if (typeof window !== 'undefined') {
-  // Run heuristics on DOMContentLoaded
+  console.log('🔍 Heuristics engine loaded, initializing...');
+  
+  // Run heuristics initialization
+  function runInit() {
+    console.log('🚀 Starting heuristics initialization...');
+    initHeuristics().then(results => {
+      if (results) {
+        console.log('✅ Initial heuristics analysis complete');
+      } else {
+        console.log('⚠️ Heuristics analysis returned no results');
+      }
+    }).catch(err => {
+      console.error('❌ Error initializing heuristics:', err);
+    });
+  }
+  
+  // Run heuristics on DOMContentLoaded or immediately if already loaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(initHeuristics, 500); // Wait for page to settle
+      setTimeout(runInit, 500); // Wait for page to settle
     });
   } else {
-    setTimeout(initHeuristics, 500);
+    // Page already loaded, run immediately
+    setTimeout(runInit, 500);
   }
 }
-
-console.log('🔍 Heuristics engine loaded');
 
