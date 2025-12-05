@@ -110,7 +110,7 @@ chrome.webNavigation.onCommitted.addListener((details) => {
 
 async function submitScanToBackend(url) {
   try {
-    const resp = await fetch('https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/urlscan', {
+    const resp = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/urlscan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
@@ -160,7 +160,7 @@ async function pollScanResult(uuid) {
   while (attempts < maxAttempts) {
 
     try {
-      const resp = await fetch(`https://marlee-uncaramelised-lovetta.ngrok-free.dev/api/urlscan/${uuid}`, {
+      const resp = await fetch(`https://premonitory-distortional-jayme.ngrok-free.dev/api/urlscan/${uuid}`, {
         method: "GET",
         headers: new Headers({
           "ngrok-skip-browser-warning": "69420",
@@ -575,7 +575,7 @@ async function updateLastVisitedBlacklistedAt() { // backend will automatically 
   try {
     console.log("🥨 in updateLastVisitedBlacklistedAt");
     const token = await getToken();
-    const res = await fetch('hhttps://premonitory-distortional-jayme.ngrok-free.dev/api/user/stats/update-visited-blacklist', {
+    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/stats/update-visited-blacklist', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
