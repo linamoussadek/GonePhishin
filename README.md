@@ -87,8 +87,4 @@ The extension integrates with a backend for URLScan.io scanning. See `backend/` 
 ## Documentation
 
 - **FIREFOX_BUILD.md** - Firefox-specific build and feature documentation
-- **TESTING_GUIDE.md** - Testing instructions and test site setup
-
-## License
-
-MIT
+- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Comprehensive testing instructions and test site setup
