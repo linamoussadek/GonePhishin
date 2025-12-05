@@ -58,6 +58,26 @@ function setupEventListeners() {
     document.getElementById('openDashboard').addEventListener('click', () => {
         chrome.tabs.create({ url: chrome.runtime.getURL('popup/dashboard/dashboard.html') });
     });
+
+    // login button
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+        chrome.runtime.sendMessage({ type: "LOGIN" },
+            (res) => {
+                if (!res || !res.success) {
+                    return alert("Failed to login: " + (res?.message || "Unknown error"));
+                }
+                if (res.data?.loginUrl) {
+                    // opens a google login window
+                    chrome.windows.create({
+                    url: res.data.loginUrl,
+                    type: "popup",
+                    width: 500,
+                    height: 700,
+                    });
+                }
+            }
+        ); 
+    });
     
     document.getElementById('closeSiteModal').addEventListener('click', () => {
         document.getElementById('siteInfoModal').style.display = 'none';
