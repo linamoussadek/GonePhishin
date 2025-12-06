@@ -212,98 +212,131 @@ async function pollScanResult(uuid) {
 // successful scan returns {success: true, message: "Scan successful", data: {isMalicious: <boolean>} }
 async function urlScan(url) {
   try {
-  const submission = await submitScanToBackend(url);
 
-  if (!submission.success) {
-    console.warn("Problem submitting scan:", submission.message);
-      // Store unavailable status
-      const unavailableResult = { 
-        success: false, 
-        unavailable: true,
-        message: submission.message || "URLScan backend unavailable"
-      };
-      storeUrlScanResult(url, unavailableResult);
-      
-      // Send message about unavailability
-    chrome.runtime.sendMessage({
-      type: "URL_SCAN_RESULT",
-      url,
-        result: unavailableResult
-    });
-      
-      return unavailableResult;
-    }
 
-  // wait before polling
-  await new Promise((r) => setTimeout(r, 10000));
-
-  // get polling result
-  const poll = await pollScanResult(submission.data.uuid);
-  console.log("polling result", poll);
-    
-  if (!poll.success) {
-    console.warn(poll.message);
-      // Store unavailable status
-      const unavailableResult = { 
-        success: false, 
-        unavailable: true,
-        message: poll.message || "URLScan polling failed"
-      };
-      storeUrlScanResult(url, unavailableResult);
-      
+    const hostname = new URL(url).hostname;
+    let urlScanResult = await getUrlScanResult(hostname);
+    if (urlScanResult !== null) {
+      console.log("we already checked this URL", urlScanResult);
       chrome.runtime.sendMessage({
         type: "URL_SCAN_RESULT",
         url,
-        result: unavailableResult
+        result: urlScanResult.result
       });
-      
-      return unavailableResult;
-  }
 
-  const result = poll.data;
-    const hasVerdicts = result.verdicts?.overall?.hasVerdicts;
-    
-  if (!hasVerdicts) {
-      console.log("Unable to verify URL (no verdict)");
-      const noVerdictResult = { 
-      success: false,
-        unavailable: false,
-        message: "We couldn't verify this URL."
-      };
-      storeUrlScanResult(url, noVerdictResult);
+      const scanResult = {
+        success: true,
+        message: "Scan results found in storage",
+        data: {
+          isMalicious: urlScanResult.result.data.isMalicious,
+          verdicts: urlScanResult.result.data.verdicts,
+          timestamp: urlScanResult.result.data.timestamp
+        }
+      }
+
+      return scanResult
+    } else {
+      // actually perform scan
+
+      //const hostname = new URL(sender.tab.url).hostname;
+      const submission = await submitScanToBackend(url);
+
+      if (!submission.success) {
+        console.warn("Problem submitting scan:", submission.message);
+        // Store unavailable status
+        const unavailableResult = { 
+          success: false, 
+          unavailable: true,
+          message: submission.message || "URLScan backend unavailable"
+        };
+        storeUrlScanResult(url, unavailableResult);
+        
+        // Send message about unavailability
+        console.log("SENDING URLSCANRESULT MESSAGE (1)");
+        chrome.runtime.sendMessage({
+          type: "URL_SCAN_RESULT",
+          url,
+          result: unavailableResult
+        });
+        
+        return unavailableResult;
+      }
+
+      // wait before polling
+      await new Promise((r) => setTimeout(r, 10000));
+
+      // get polling result
+      const poll = await pollScanResult(submission.data.uuid);
+      console.log("polling result", poll);
       
+      if (!poll.success) {
+        console.warn(poll.message);
+        // Store unavailable status
+        const unavailableResult = { 
+          success: false, 
+          unavailable: true,
+          message: poll.message || "URLScan polling failed"
+        };
+
+        storeUrlScanResult(url, unavailableResult);
+        
+        console.log("SENDING URLSCANRESULT MESSAGE (2)");
+        chrome.runtime.sendMessage({
+          type: "URL_SCAN_RESULT",
+          url,
+          result: unavailableResult
+        });
+        
+        return unavailableResult;
+      }
+
+      const result = poll.data;
+      const hasVerdicts = result.verdicts?.overall?.hasVerdicts;
+      
+      if (!hasVerdicts) {
+        console.log("Unable to verify URL (no verdict)");
+        const noVerdictResult = { 
+          success: false,
+          unavailable: false,
+          message: "We couldn't verify this URL."
+        };
+        storeUrlScanResult(url, noVerdictResult);
+        
+        console.log("SENDING URLSCANRESULT MESSAGE (3)");
+        chrome.runtime.sendMessage({
+          type: "URL_SCAN_RESULT",
+          url,
+          result: noVerdictResult
+        });
+        
+        return noVerdictResult;
+      }
+
+      console.log("malicious:", result.verdicts.overall.malicious);
+      
+      const scanResult = { 
+        success: true, 
+        message: "Scan successful", 
+        data: { 
+          isMalicious: result.verdicts.overall.malicious,
+          verdicts: result.verdicts,
+          timestamp: Date.now()
+        } 
+      };
+      
+      // Store URLScan result
+      storeUrlScanResult(url, scanResult);
+
+      // Send result to popup
+      console.log("SENDING URLSCANRESULT MESSAGE (4)");
       chrome.runtime.sendMessage({
         type: "URL_SCAN_RESULT",
         url,
-        result: noVerdictResult
+        result: scanResult
       });
-      
-      return noVerdictResult;
+        
+      return scanResult;
     }
-
-    console.log("malicious:", result.verdicts.overall.malicious);
-    
-    const scanResult = { 
-      success: true, 
-      message: "Scan successful", 
-      data: { 
-        isMalicious: result.verdicts.overall.malicious,
-        verdicts: result.verdicts,
-        timestamp: Date.now()
-      } 
-    };
-    
-    // Store URLScan result
-    storeUrlScanResult(url, scanResult);
-
-  // Send result to popup
-  chrome.runtime.sendMessage({
-    type: "URL_SCAN_RESULT",
-    url,
-      result: scanResult
-    });
-    
-    return scanResult;
   } catch (error) {
     console.error("URLScan error:", error);
     const errorResult = { 
@@ -313,6 +346,7 @@ async function urlScan(url) {
     };
     storeUrlScanResult(url, errorResult);
     
+    console.log("SENDING URLSCANRESULT MESSAGE (5)");
     chrome.runtime.sendMessage({
       type: "URL_SCAN_RESULT",
       url,
@@ -947,7 +981,7 @@ function calculateUrlScanScore(urlScanResult) {
         confidence: 100,
         available: true
       };
-      } else {
+    } else {
       return { score: 0, confidence: 80, available: true };
     }
   }
@@ -1060,7 +1094,8 @@ function calculateUnifiedScores(data) {
   } = data;
   
   const heuristics = calculateHeuristicsScore(heuristicsAnomalyScore, heuristicsConfidenceScore);
-  const urlScan = calculateUrlScanScore(urlScanResult);
+  console.log("this is the urlscanresult stuff", urlScanResult);
+  const urlScan = calculateUrlScanScore(urlScanResult); // here
   const httpsEnforcement = calculateHttpsEnforcementScore(httpsUpgraded, isHTTPS);
   const connectionSecurity = calculateConnectionSecurityScore(isHTTPS, isValidCertificate);
   
@@ -1105,7 +1140,15 @@ async function handleHeuristicsResults(results, sender) {
 
   // Get URLScan result for this hostname
   const hostname = new URL(sender.tab.url).hostname;
-  const urlScanResult = await getUrlScanResult(hostname);
+  const url = new URL(sender.tab.url)
+  let urlScanResult = await getUrlScanResult(hostname);
+  if (urlScanResult === null) {
+    console.log("Getting urlscan result before calculating score")
+    await urlScan(url);
+    urlScanResult = await getUrlScanResult(hostname);
+  }
+
+  console.log("this is the urlscanresult from storage", urlScanResult);
   
   // Get HTTPS upgrade status for this tab
   const httpsUpgraded = tabUpgradeCounts.has(tabId) && tabUpgradeCounts.get(tabId) > 0;
