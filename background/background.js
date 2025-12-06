@@ -318,7 +318,7 @@ async function urlScan(url) {
         success: true, 
         message: "Scan successful", 
         data: { 
-          isMalicious: result.verdicts.overall.malicious,
+          isMalicious: result.verdicts.overall.malicious, // change this line to true to sim malicious
           verdicts: result.verdicts,
           timestamp: Date.now()
         } 
