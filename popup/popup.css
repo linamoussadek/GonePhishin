@@ -24,7 +24,7 @@
 }
 
 html, body {
-    width: 380px;
+    width: 450px;
     min-height: auto;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
     background: var(--bg);

@@ -49,6 +49,24 @@ async function refreshCurrentTab() {
     console.log('📑 Current active tab:', currentTab?.id, currentTab?.url);
 }
 
+function getCurrentHostname() {
+    try {
+        if (!currentTab || !currentTab.url) return null;
+
+        // Ignore browser / extension internal pages
+        const url = new URL(currentTab.url);
+        if (['chrome:', 'edge:', 'about:', 'chrome-extension:']
+            .some(p => url.protocol.startsWith(p))) {
+            return null;
+        }
+        return url.hostname;
+    } catch (e) {
+        console.error('Failed to get hostname:', e);
+        return null;
+    }
+}
+
+
 // Setup event listeners
 function setupEventListeners() {
     document.getElementById('refreshBtn').addEventListener('click', async () => {
@@ -78,6 +96,44 @@ function setupEventListeners() {
             }
         ); 
     });
+
+    const whitelistBtn = document.getElementById('whitelistBtn');
+    if (whitelistBtn) {
+        whitelistBtn.addEventListener('click', () => {
+            const hostname = getCurrentHostname();
+            if (!hostname) {
+                alert('No active website to whitelist.');
+                return;
+            }
+
+            chrome.runtime.sendMessage(
+                { type: "ADD_WHITELIST", url: hostname },
+                (res) => {
+                    if (!res) {
+                        alert('No response from background script.');
+                        return;
+                    }
+
+                    if (res.error) {
+                        // Handle invalid / expired token
+                        if (res.status === 401 || res.status === 403) {
+                            alert('Your login token is invalid or expired. Please hit "Login" again and then retry whitelisting.');
+                        } else {
+                            alert('Failed to add to whitelist:\n' + (res.text || res.message || 'Unknown error'));
+                        }
+                        return;
+                    }
+
+                    if (res.success) {
+                        alert(`${hostname} was added to your whitelist ✅`);
+                    } else {
+                        alert('Unexpected response from whitelist API.');
+                    }
+                }
+            );
+        });
+    }
+
     
     document.getElementById('closeSiteModal').addEventListener('click', () => {
         document.getElementById('siteInfoModal').style.display = 'none';
