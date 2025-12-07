@@ -365,7 +365,7 @@ function renderWhitelist(urls) {
     const container = document.getElementById('whitelistContainer');
 
     if (!urls.length) {
-        container.innerHTML = '<div class="whitelist-empty">No whitelisted URLs yet. Sites you trust can be added to bypass security checks.</div>';
+        container.innerHTML = '<div class="whitelist-empty">No whitelisted URLs yet. Sites you trust can be added to bypass some security checks.</div>';
         return;
     }
 

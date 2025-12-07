@@ -408,6 +408,12 @@ function updateUrlScanStatus(heuristicsData) {
         urlScanStatus.textContent = '🚨 Malicious';
         urlScanStatus.className = 'info-value critical';
         urlScanStatus.title = 'URLScan.io flagged this URL as malicious';
+    } else if (heuristicsData.urlScan.whitelisted) {
+        // URL is whitelisted
+        urlScanStatus.textContent = '☑️ Whitelisted';
+        urlScanStatus.className = 'info-value secure';
+        urlScanStatus.title = 'This URL is in your whitelist';
+
     } else {
         // URLScan marked as safe
         urlScanStatus.textContent = '✅ Verified Safe';

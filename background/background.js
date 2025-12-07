@@ -215,6 +215,50 @@ async function urlScan(url) {
 
 
     const hostname = new URL(url).hostname;
+    console.log("THIS IS THE URLSCAN HOSTNAME", hostname);
+
+    // get whitelist
+    const { whitelist = [] } = await chrome.storage.local.get("whitelist");
+    let isWhitelisted = false;
+    if (!(whitelist.length === 0)) { // whitelist isn't empty
+      
+      if (hostname.startsWith("www.")) {
+        let hostnameNoWWW = hostname.slice(4);
+        isWhitelisted = whitelist.some(entry =>
+          entry.includes(hostnameNoWWW)
+        );
+      } else {
+        isWhitelisted = whitelist.some(entry =>
+          entry.includes(hostname)
+        );
+      }
+
+    }
+
+    if (isWhitelisted) {
+      console.log("URLSCAN: url is whitelisted")
+      // skip scan
+      const whitelistResult =  {
+        success: true,
+        message: "URL domain is in whitelist",
+        whitelisted: true,
+        data: {
+          isMalicious: false
+        }
+      }
+
+      storeUrlScanResult(url, whitelistResult);
+
+      chrome.runtime.sendMessage({
+        type: "URL_SCAN_RESULT",
+        url,
+        result: whitelistResult
+      })
+
+      return whitelistResult;
+    };
+
+
     let urlScanResult = await getUrlScanResult(hostname);
     if (urlScanResult !== null) {
       console.log("we already checked this URL", urlScanResult);
@@ -611,6 +655,20 @@ async function removeUrlFromUserWhitelist(urlToDelete) {
 
     // bandaid soln to update storage
     getUserWhitelist();
+
+    // in storage, clear "urlscan_hostname"
+    const allItems = await chrome.storage.local.get(null);
+    const allKeys = Object.keys(allItems);
+
+    const match = allKeys.find(key => 
+      key.includes("urlscan_") &&
+      key.includes(urlToDelete)
+    );
+
+    if (match) {
+      await chrome.storage.local.remove(match);
+      console.log("Removed:", match);
+    }
 
     return { success: true, data };
 
@@ -1250,6 +1308,7 @@ async function handleHeuristicsResults(results, sender) {
       
       // Feature status
       urlScan: urlScanResult ? {
+        whitelisted: urlScanResult.result?.whitelisted || false,
         available: !urlScanResult.unavailable,
         malicious: urlScanResult.result?.data?.isMalicious || false,
         unavailable: urlScanResult.unavailable || false,
@@ -1280,7 +1339,7 @@ async function handleHeuristicsResults(results, sender) {
   }
 }
 
-// Get URLScan result for a hostname
+// Get URLScan result for a hostname in storage
 async function getUrlScanResult(hostname) {
   try {
     const storageData = await chrome.storage.local.get();
