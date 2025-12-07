@@ -501,6 +501,40 @@ async function getUserInfo() {
 
 };
 
+async function getUserWhitelist() {
+  try {
+    const token = await getToken();
+    const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/whitelist', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'ngrok-skip-browser-warning': '69420'
+      }
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("🍊Backend returned error:", res.status, text);
+      return { error: true, status: res.status, text };
+    }
+
+    const data = await res.json();
+    console.log("🍊In getUserWhitelist function - response: ", data);
+
+    // store
+    const urlsOnly = data.whitelistedUrls.map(item => item.url);
+    chrome.storage.local.set({whitelist: urlsOnly})
+    console.log("🍊In getUserWhitelist function - stored whitelist: ", urlsOnly)
+
+
+    return data
+  } catch (err) {
+    console.error("🍊Fetch failed:", err);
+    return { error: true, message: err.message };
+  }
+
+};
+
 // Valarie
 async function addUrlToUserWhitelist(urlToAdd) { 
   try {
@@ -534,6 +568,10 @@ async function addUrlToUserWhitelist(urlToAdd) {
 
     const data = await res.json();
     console.log("🦴 addUrlToUserWhitelist success:", data);
+
+    // bandaid soln to update storage
+    getUserWhitelist();
+
     return { success: true, data };
 
   } catch (err) {
@@ -570,6 +608,10 @@ async function removeUrlFromUserWhitelist(urlToDelete) {
 
     const data = await res.json();
     console.log("🍟 in RemoveUrlFromUserWhitelist function - response: ", data);
+
+    // bandaid soln to update storage
+    getUserWhitelist();
+
     return { success: true, data };
 
   } catch (err) {
@@ -578,7 +620,7 @@ async function removeUrlFromUserWhitelist(urlToDelete) {
   }
 };
 
-async function getUserWhitelist() {
+/*async function getUserWhitelist() {
   try {
     const token = await getToken();
     const res = await fetch('https://premonitory-distortional-jayme.ngrok-free.dev/api/user/whitelist', {
@@ -603,7 +645,7 @@ async function getUserWhitelist() {
     return { error: true, message: err.message };
   }
 
-};
+};*/
 
 async function updateLastVisitedBlacklistedAt() { // backend will automatically update the date to today - need to fix timezone tho
   try {
@@ -690,6 +732,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
       let data;
+      let whitelistResp;
       switch (msg.type) {
         case "LOGIN":
           //token = msg.token;
@@ -708,6 +751,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         case "OAUTH_COMPLETE":
           console.log("⛰️ Token received from login:", msg.token);
           chrome.storage.local.set({token: msg.token});
+
+          whitelistResp = await getUserWhitelist(); // now whitelist is in local storage
+          console.log("⛰️ Whitelist received upon login:", whitelistResp);
+
           sendResponse({success: true});
           break;
 
@@ -721,6 +768,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         case "ADD_WHITELIST": {
           // URL comes from popup.js
           const url = msg.url;
+          console.log("this is the msg.url", msg.url);
           const result = await addUrlToUserWhitelist(url);
           sendResponse(result);
           break;

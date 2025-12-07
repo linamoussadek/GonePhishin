@@ -106,8 +106,10 @@ function setupEventListeners() {
                 return;
             }
 
+            const fullUrl = currentTab.url
+
             chrome.runtime.sendMessage(
-                { type: "ADD_WHITELIST", url: hostname },
+                { type: "ADD_WHITELIST", url: fullUrl }, // need to full url, backend takes care of stripping it
                 (res) => {
                     if (!res) {
                         alert('No response from background script.');
